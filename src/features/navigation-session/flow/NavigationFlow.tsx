@@ -57,11 +57,14 @@ export function NavigationFlow({
         if (isCurrent) {
           dispatch({ type: 'map-analysis-finished', message: analysis.message });
         }
-      } catch {
+      } catch (error) {
         if (isCurrent) {
           dispatch({
-            type: 'map-analysis-finished',
-            message: '平面图已载入。请描述你想去的位置。',
+            type: 'map-analysis-failed',
+            message:
+              error instanceof Error
+                ? error.message
+                : '平面图分析失败，请检查图片模型配置后重试。',
           });
         }
       }
@@ -83,11 +86,20 @@ export function NavigationFlow({
     setIsSaved(false);
     dispatch({ type: 'intent-analysis-started' });
 
-    const response = await navigationBackend.resolveNavigationIntent({
-      imageDataUrl: state.imageDataUrl,
-      prompt,
-      previousPrompt: state.destinationText || undefined,
-    });
+    let response;
+    try {
+      response = await navigationBackend.resolveNavigationIntent({
+        imageDataUrl: state.imageDataUrl,
+        prompt,
+        previousPrompt: state.destinationText || undefined,
+      });
+    } catch (error) {
+      dispatch({
+        type: 'intent-analysis-failed',
+        message: error instanceof Error ? error.message : '意图识别失败，请检查配置后重试。',
+      });
+      return;
+    }
 
     switch (response.type) {
       case 'route-found':
@@ -144,6 +156,15 @@ export function NavigationFlow({
           <NavigationWorkspaceStep
             imageUrl={state.imageDataUrl}
             bottom={{ type: 'status', label: '正在分析平面图' }}
+          />
+        );
+      case 'map-analysis-failed':
+        if (!state.imageDataUrl) return null;
+
+        return (
+          <NavigationWorkspaceStep
+            imageUrl={state.imageDataUrl}
+            bottom={{ type: 'status', label: state.agentMessage }}
           />
         );
       case 'awaiting-intent':

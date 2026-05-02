@@ -46,6 +46,12 @@ export function navigationFlowReducer(
         agentMessage: action.message,
         stage: 'awaiting-intent',
       };
+    case 'map-analysis-failed':
+      return {
+        ...state,
+        agentMessage: action.message,
+        stage: 'map-analysis-failed',
+      };
     case 'intent-text-changed':
       return {
         ...state,
@@ -59,6 +65,13 @@ export function navigationFlowReducer(
             stage: 'analyzing-intent',
           }
         : state;
+    case 'intent-analysis-failed':
+      return {
+        ...state,
+        promptText: '',
+        agentMessage: action.message,
+        stage: 'needs-more-info',
+      };
     case 'route-found':
       return {
         ...state,

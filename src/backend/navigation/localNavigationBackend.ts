@@ -1,6 +1,9 @@
 import { createDemoPath } from '../../core/path';
+import { backendConfig } from '../backendConfig';
 import { detectFloorPlanCornersInImage } from '../floor-plan/floorPlanCornerDetection';
 import { correctPerspective } from '../floor-plan/perspectiveTransform';
+import { resolveNavigationIntentWithTextModel } from '../text-model/navigationIntentTextModel';
+import { analyzeFloorPlanWithVisionModel } from '../vision-model/floorPlanAnalysisVisionModel';
 import type {
   FloorPlanCorner,
   NavigationBackend,
@@ -48,8 +51,12 @@ export const localNavigationBackend: NavigationBackend = {
     return { correctedImageDataUrl };
   },
 
-  async analyzeFloorPlan({ imageDataUrl }) {
-    void imageDataUrl;
+  async analyzeFloorPlan(request) {
+    if (backendConfig.floorPlanAnalysisMode === 'vision-model') {
+      return analyzeFloorPlanWithVisionModel(request);
+    }
+
+    void request.imageDataUrl;
     await delay(850);
 
     return {
@@ -58,6 +65,10 @@ export const localNavigationBackend: NavigationBackend = {
   },
 
   async resolveNavigationIntent(request) {
+    if (backendConfig.intentRecognitionMode === 'text-model') {
+      return resolveNavigationIntentWithTextModel(request);
+    }
+
     await delay(950);
     return resolveIntentLocally(request);
   },

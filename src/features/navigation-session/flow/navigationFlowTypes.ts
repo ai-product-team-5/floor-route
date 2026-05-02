@@ -2,6 +2,7 @@ import type { NormalizedPoint, RouteMode } from '../../../core/types';
 
 export type NavigationStage =
   | 'analyzing-map'
+  | 'map-analysis-failed'
   | 'awaiting-intent'
   | 'analyzing-intent'
   | 'needs-more-info'
@@ -21,8 +22,10 @@ export type NavigationFlowState = {
 
 export type NavigationFlowAction =
   | { type: 'map-analysis-finished'; message: string }
+  | { type: 'map-analysis-failed'; message: string }
   | { type: 'intent-text-changed'; value: string }
   | { type: 'intent-analysis-started' }
+  | { type: 'intent-analysis-failed'; message: string }
   | {
       type: 'route-found';
       destinationText: string;
