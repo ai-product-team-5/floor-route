@@ -15,14 +15,14 @@ export const remoteNavigationBackend: NavigationBackend = {
 
   analyzeFloorPlan(request) {
     return postBackendJson<AnalyzeFloorPlanRequest, AnalyzeFloorPlanResult>(
-      '/navigation/analyze-floor-plan',
+      '/api/navigation/analyze-floor-plan',
       request,
     );
   },
 
   resolveNavigationIntent(request) {
     return postBackendJson<ResolveNavigationIntentRequest, ResolveNavigationIntentResult>(
-      '/navigation/resolve-intent',
+      '/api/navigation/resolve-intent',
       request,
     );
   },
@@ -46,8 +46,17 @@ async function postBackendJson<RequestBody, ResponseBody>(
   });
 
   if (!response.ok) {
-    throw new Error(`远程 API 请求失败：${response.status}`);
+    throw new Error(await createBackendErrorMessage(response));
   }
 
   return response.json() as Promise<ResponseBody>;
+}
+
+async function createBackendErrorMessage(response: Response) {
+  try {
+    const data = (await response.json()) as { error?: string; message?: string };
+    return data.message || data.error || `远程 API 请求失败：${response.status}`;
+  } catch {
+    return `远程 API 请求失败：${response.status}`;
+  }
 }

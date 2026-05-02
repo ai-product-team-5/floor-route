@@ -1205,6 +1205,40 @@ h2 {
   padding-block: 4px;
 }
 
+.api-key-panel {
+  gap: 14px;
+}
+
+.api-key-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.api-key-state {
+  min-height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.api-key-state.saved {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.api-key-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .metric-row {
   min-height: 58px;
   display: flex;

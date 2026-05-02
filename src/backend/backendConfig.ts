@@ -18,7 +18,6 @@ export const backendConfig = {
   floorPlanAnalysisMode:
     rawFloorPlanAnalysisMode === 'vision-model' ? 'vision-model' : 'mock',
   apiBaseUrl: normalizeBaseUrl(import.meta.env.VITE_FLOOR_ROUTE_API_BASE_URL),
-  apiToken: import.meta.env.VITE_FLOOR_ROUTE_API_TOKEN?.trim() ?? '',
   modelBaseUrl,
   modelApiKey,
   modelName,
@@ -39,7 +38,6 @@ export const backendConfig = {
   intentRecognitionMode: IntentRecognitionMode;
   floorPlanAnalysisMode: FloorPlanAnalysisMode;
   apiBaseUrl: string;
-  apiToken: string;
   modelBaseUrl: string;
   modelApiKey: string;
   modelName: string;

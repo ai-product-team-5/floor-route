@@ -1,11 +1,13 @@
-import { backendConfig } from '../backendConfig';
+import { getFloorRouteApiKey } from './floorRouteApiKey';
 
 export function createBackendAuthHeaders(): Record<string, string> {
-  if (!backendConfig.apiToken) {
-    return {};
+  const apiKey = getFloorRouteApiKey();
+
+  if (!apiKey) {
+    throw new Error('远程 API key 未配置。请在“我的”页面设置 FloorRoute API key。');
   }
 
   return {
-    Authorization: `Bearer ${backendConfig.apiToken}`,
+    Authorization: `Bearer ${apiKey}`,
   };
 }
