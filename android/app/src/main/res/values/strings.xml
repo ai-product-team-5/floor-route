@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">方寸识途</string>
+    <string name="title_activity_main">方寸识途</string>
+    <string name="package_name">com.floorroute.app</string>
+    <string name="custom_url_scheme">com.floorroute.app</string>
+</resources>
