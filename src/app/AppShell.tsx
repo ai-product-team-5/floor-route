@@ -1,6 +1,7 @@
+import { App as CapacitorApp } from '@capacitor/app';
 import { Camera, Home, UserRound } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import type { RouteHistoryItem } from '../core/types';
 import { NavigationSession } from '../features/navigation-session/NavigationSession';
 
@@ -36,10 +37,24 @@ function pushSessionHistoryEntry(id: string) {
 
 export function AppShell() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const sessionHistoryIdRef = useRef<string | null>(null);
+  const navigationSessionRef = useRef<NavigationSessionState | null>(null);
+  const pathnameRef = useRef(pathname);
   const [navigationSession, setNavigationSession] =
     useState<NavigationSessionState | null>(null);
   const title = pageTitles[pathname] ?? '方寸识途';
+
+  const closeNavigationSession = useCallback(() => {
+    if (sessionHistoryIdRef.current) {
+      sessionHistoryIdRef.current = null;
+      setNavigationSession(null);
+      window.history.back();
+      return;
+    }
+
+    setNavigationSession(null);
+  }, []);
 
   useEffect(() => {
     function handlePopState() {
@@ -55,21 +70,42 @@ export function AppShell() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    navigationSessionRef.current = navigationSession;
+  }, [navigationSession]);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    let removeBackButtonListener: (() => void) | undefined;
+
+    void CapacitorApp.addListener('backButton', () => {
+      if (navigationSessionRef.current) {
+        closeNavigationSession();
+        return;
+      }
+
+      if (pathnameRef.current !== '/home') {
+        navigate('/home');
+        return;
+      }
+
+      void CapacitorApp.exitApp();
+    }).then((listener) => {
+      removeBackButtonListener = () => {
+        void listener.remove();
+      };
+    });
+
+    return () => removeBackButtonListener?.();
+  }, [closeNavigationSession, navigate]);
+
   function openNavigationSession(nextSession: NavigationSessionState) {
     sessionHistoryIdRef.current = nextSession.id;
     pushSessionHistoryEntry(nextSession.id);
     setNavigationSession(nextSession);
-  }
-
-  function closeNavigationSession() {
-    if (sessionHistoryIdRef.current) {
-      sessionHistoryIdRef.current = null;
-      setNavigationSession(null);
-      window.history.back();
-      return;
-    }
-
-    setNavigationSession(null);
   }
 
   function openCapture() {
