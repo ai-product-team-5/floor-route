@@ -47,6 +47,7 @@ type QuadCandidate = {
 };
 
 type DetectionPipeline = {
+  cv: CvRuntime;
   originalWidth: number;
   originalHeight: number;
   width: number;
@@ -86,9 +87,12 @@ export type FloorPlanCornerDetectionDebugOutput = {
     contourCount: number;
     contours: Array<{
       index: number;
+      contourIndex: number;
       points: number;
+      area: number;
       bounds: { x: number; y: number; width: number; height: number };
       areaRatio: number;
+      firstPoints: PixelPoint[];
     }>;
     candidates: Array<{
       index: number;
@@ -101,7 +105,6 @@ export type FloorPlanCornerDetectionDebugOutput = {
   stages: Record<string, string>;
 };
 
-const MAX_DETECTION_SIDE = 900;
 const MIN_AREA_RATIO = 0.3;
 const OPENCV_SCRIPT_SRC = `${import.meta.env.BASE_URL}vendor/opencv.js`;
 
@@ -142,7 +145,9 @@ export async function createFloorPlanCornerDetectionDebug(
         contourCount: pipeline.contours.length,
         contours: pipeline.contours.map((contour, index) => ({
           index,
+          contourIndex: contour.contourIndex,
           points: contour.points.length,
+          area: contour.area,
           bounds: {
             x: contour.minX,
             y: contour.minY,
@@ -150,6 +155,7 @@ export async function createFloorPlanCornerDetectionDebug(
             height: contour.maxY - contour.minY + 1,
           },
           areaRatio: contour.area / (pipeline.width * pipeline.height),
+          firstPoints: contour.points.slice(0, 8),
         })),
         candidates: pipeline.candidates.map((candidate, index) => ({
           index,
@@ -181,7 +187,14 @@ export async function createFloorPlanCornerDetectionDebug(
           pipeline.width,
           pipeline.height,
         ),
-        '06-contours-overlay': contoursOverlayToDataUrl(
+        '06a-contours-direct': contoursDirectToDataUrl(
+          pipeline.cv,
+          pipeline.width,
+          pipeline.height,
+          pipeline.contours,
+        ),
+        '06b-contours-overlay': contoursOverlayToDataUrl(
+          pipeline.cv,
           pipeline.imageData,
           pipeline.contours,
         ),
@@ -209,12 +222,9 @@ async function runDetectionPipeline(imageDataUrl: string): Promise<DetectionPipe
     width: image.naturalWidth,
     height: image.naturalHeight,
   });
-  const scale = Math.min(
-    1,
-    MAX_DETECTION_SIDE / Math.max(image.naturalWidth, image.naturalHeight),
-  );
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const scale = 1;
+  const width = image.naturalWidth;
+  const height = image.naturalHeight;
   const imageData = imageToScaledImageData(image, width, height);
 
   const src = cv.matFromImageData(imageData);
@@ -273,6 +283,7 @@ async function runDetectionPipeline(imageDataUrl: string): Promise<DetectionPipe
     });
 
     return {
+      cv,
       originalWidth: image.naturalWidth,
       originalHeight: image.naturalHeight,
       width,
@@ -704,38 +715,58 @@ function binaryToDataUrl(values: Uint8Array, width: number, height: number) {
   return imageDataToDataUrl(imageData);
 }
 
+function matRgbaToDataUrl(mat: OpenCv.Mat) {
+  const rgba = new Uint8ClampedArray(mat.data);
+  return imageDataToDataUrl(new ImageData(rgba, mat.cols, mat.rows));
+}
+
+function contoursDirectToDataUrl(
+  cv: CvRuntime,
+  width: number,
+  height: number,
+  contours: ContourRegion[],
+) {
+  const output = cv.Mat.zeros(height, width, cv.CV_8UC4);
+  const contourVector = new cv.MatVector();
+
+  try {
+    contours.forEach((contour) => contourVector.push_back(contour.contour));
+    cv.drawContours(
+      output,
+      contourVector,
+      -1,
+      new cv.Scalar(0, 255, 0, 255),
+      2,
+    );
+
+    return matRgbaToDataUrl(output);
+  } finally {
+    deleteMats(output, contourVector);
+  }
+}
+
 function contoursOverlayToDataUrl(
+  cv: CvRuntime,
   imageData: ImageData,
   contours: ContourRegion[],
 ) {
-  return overlayToDataUrl(imageData, (context) => {
-    contours.forEach((contour, index) => {
-      const color = componentColor(index);
-      context.save();
-      context.fillStyle = color;
-      context.globalAlpha = 0.86;
-      contour.points.forEach((point) => {
-        context.fillRect(point.x, point.y, 1, 1);
-      });
-      context.restore();
+  const output = cv.matFromImageData(imageData);
+  const contourVector = new cv.MatVector();
 
-      context.strokeStyle = color;
-      context.lineWidth = 3;
-      context.strokeRect(
-        contour.minX,
-        contour.minY,
-        contour.maxX - contour.minX + 1,
-        contour.maxY - contour.minY + 1,
-      );
-      drawLabel(
-        context,
-        `#${index} ${contour.points.length}`,
-        contour.minX + 4,
-        contour.minY + 18,
-        color,
-      );
-    });
-  });
+  try {
+    contours.forEach((contour) => contourVector.push_back(contour.contour));
+    cv.drawContours(
+      output,
+      contourVector,
+      -1,
+      new cv.Scalar(0, 255, 0, 255),
+      2,
+    );
+
+    return matRgbaToDataUrl(output);
+  } finally {
+    deleteMats(output, contourVector);
+  }
 }
 
 function topCandidatesOverlayToDataUrl(

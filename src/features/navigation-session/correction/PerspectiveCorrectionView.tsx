@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { navigationSessionApi } from '../api/navigationSessionApi';
-import type { PerspectivePoint } from './perspectiveTransform';
+import { navigationBackend } from '../../../backend/navigation/navigationBackend';
+import type { PerspectivePoint } from '../../../backend/floor-plan/perspectiveTransform';
 
 type PerspectiveCorrectionViewProps = {
   imageDataUrl: string;
@@ -14,6 +14,8 @@ type Size = {
   width: number;
   height: number;
 };
+
+type DetectionState = 'detecting' | 'detected' | 'fallback' | 'failed';
 
 const fallbackPoints: PerspectivePoint[] = [
   { x: 0.08, y: 0.08 },
@@ -34,6 +36,7 @@ export function PerspectiveCorrectionView({
   const [workspaceSize, setWorkspaceSize] = useState<Size>({ width: 0, height: 0 });
   const [imageSize, setImageSize] = useState<Size>({ width: 0, height: 0 });
   const [isApplying, setIsApplying] = useState(false);
+  const [detectionState, setDetectionState] = useState<DetectionState>('detecting');
   const [detectionMessage, setDetectionMessage] = useState('正在识别平面图边框...');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -42,7 +45,7 @@ export function PerspectiveCorrectionView({
 
     async function detectCorners() {
       try {
-        const result = await navigationSessionApi.detectFloorPlanCorners({
+        const result = await navigationBackend.detectFloorPlanCorners({
           imageDataUrl,
         });
 
@@ -52,14 +55,16 @@ export function PerspectiveCorrectionView({
           setPoints(result.corners);
         }
 
+        setDetectionState(result.source === 'detected' ? 'detected' : 'fallback');
         setDetectionMessage(
           result.message ??
             (result.source === 'detected'
-              ? '已自动识别边框，可继续调整。'
+              ? '已自动框选边框，可调整后确认。'
               : '请拖动四角校正平面图边框。'),
         );
       } catch {
         if (isCurrent) {
+          setDetectionState('failed');
           setDetectionMessage('未自动识别到边框，请手动调整四角。');
         }
       }
@@ -113,11 +118,15 @@ export function PerspectiveCorrectionView({
   }
 
   async function handleConfirm() {
+    if (detectionState === 'detecting') {
+      return;
+    }
+
     setErrorMessage('');
     setIsApplying(true);
 
     try {
-      const result = await navigationSessionApi.correctFloorPlanPerspective({
+      const result = await navigationBackend.correctFloorPlanPerspective({
         imageDataUrl,
         corners: points,
       });
@@ -188,7 +197,11 @@ export function PerspectiveCorrectionView({
         </svg>
       </div>
 
-      {detectionMessage && <p className="correction-status">{detectionMessage}</p>}
+      {detectionMessage && (
+        <p className={`correction-status ${detectionState}`} aria-live="polite">
+          {detectionMessage}
+        </p>
+      )}
       {errorMessage && <p className="correction-error">{errorMessage}</p>}
 
       <footer className="correction-actions">
@@ -199,11 +212,11 @@ export function PerspectiveCorrectionView({
         <button
           type="button"
           className="correction-primary-action"
-          disabled={isApplying}
+          disabled={isApplying || detectionState === 'detecting'}
           onClick={() => void handleConfirm()}
         >
           <Check aria-hidden="true" size={24} />
-          {isApplying ? '校正中' : '确认'}
+          {isApplying ? '校正中' : detectionState === 'detecting' ? '识别中' : '确认'}
         </button>
       </footer>
     </section>

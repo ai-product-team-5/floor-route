@@ -47,6 +47,7 @@ export function CaptureCorrectionFlow({
   if (step === 'correction' && imageDataUrl) {
     return (
       <PerspectiveCorrectionView
+        key={imageDataUrl}
         imageDataUrl={imageDataUrl}
         onCancel={onCancel}
         onRetake={() => setStep('camera')}

@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState } from 'react';
 import type { RouteHistoryItem } from '../../../core/types';
 import { useHistoryStore } from '../../../store/historyStore';
-import { navigationSessionApi } from '../api/navigationSessionApi';
+import { navigationBackend } from '../../../backend/navigation/navigationBackend';
 import {
   createNavigationFlowState,
   navigationFlowReducer,
@@ -51,7 +51,7 @@ export function NavigationFlow({
       if (!state.imageDataUrl) return;
 
       try {
-        const analysis = await navigationSessionApi.analyzeFloorPlan({
+        const analysis = await navigationBackend.analyzeFloorPlan({
           imageDataUrl: state.imageDataUrl,
         });
         if (isCurrent) {
@@ -83,7 +83,7 @@ export function NavigationFlow({
     setIsSaved(false);
     dispatch({ type: 'intent-analysis-started' });
 
-    const response = await navigationSessionApi.resolveNavigationIntent({
+    const response = await navigationBackend.resolveNavigationIntent({
       imageDataUrl: state.imageDataUrl,
       prompt,
       previousPrompt: state.destinationText || undefined,

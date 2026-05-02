@@ -593,10 +593,6 @@ h2 {
   height: 100%;
   min-height: 0;
   display: block;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
   object-fit: contain;
 }
 
@@ -690,6 +686,16 @@ h2 {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.76);
   font-size: 13px;
+}
+
+.correction-status.detected {
+  background: rgba(8, 183, 159, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.correction-status.fallback,
+.correction-status.failed {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .correction-error {

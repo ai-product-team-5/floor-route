@@ -1,12 +1,12 @@
-import { createDemoPath } from '../../../core/path';
-import { detectFloorPlanCornersInImage } from '../correction/floorPlanCornerDetection';
-import { correctPerspective } from '../correction/perspectiveTransform';
+import { createDemoPath } from '../../core/path';
+import { detectFloorPlanCornersInImage } from '../floor-plan/floorPlanCornerDetection';
+import { correctPerspective } from '../floor-plan/perspectiveTransform';
 import type {
   FloorPlanCorner,
-  NavigationSessionApi,
+  NavigationBackend,
   ResolveNavigationIntentRequest,
   ResolveNavigationIntentResult,
-} from './navigationSessionApiTypes';
+} from './navigationBackendTypes';
 
 const fallbackCorners: FloorPlanCorner[] = [
   { x: 0.08, y: 0.08 },
@@ -21,7 +21,7 @@ const unsupportedIntentPattern =
 const directRoutePattern =
   /卫生间|厕所|洗手间|出口|电梯|扶梯|楼梯|服务台|前台|收银|停车|入口|会议室|教室|办公室/i;
 
-export const localNavigationSessionApi: NavigationSessionApi = {
+export const localNavigationBackend: NavigationBackend = {
   async detectFloorPlanCorners({ imageDataUrl }) {
     const detected = await detectFloorPlanCornersInImage(imageDataUrl);
 

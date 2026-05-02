@@ -9,6 +9,10 @@ lerna-debug.log*
 dev-server.err
 
 node_modules
+.venv
+.env
+.env.*
+!.env.example
 dist
 dist-ssr
 debug-output

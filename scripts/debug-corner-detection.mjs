@@ -59,7 +59,7 @@ try {
 
   const debugOutput = await page.evaluate(async (imageDataUrl) => {
     const module = await import(
-      '/src/features/navigation-session/correction/floorPlanCornerDetection.ts'
+      '/src/backend/floor-plan/floorPlanCornerDetection.ts'
     );
 
     return module.createFloorPlanCornerDetectionDebug(imageDataUrl);
@@ -85,8 +85,16 @@ try {
     `${JSON.stringify(summary, null, 2)}\n`,
     'utf8',
   );
+  await writeFile(
+    path.join(outputRoot, 'contours.json'),
+    `${JSON.stringify(summary.metrics.contours, null, 2)}\n`,
+    'utf8',
+  );
 
   console.log(`Corner detection debug output written to: ${outputRoot}`);
+  console.log(
+    `findContours raw count: ${summary.metrics.rawContourCount}, exported contours: ${summary.metrics.contourCount}`,
+  );
   console.log(JSON.stringify(summary.result, null, 2));
 } finally {
   await browser?.close();

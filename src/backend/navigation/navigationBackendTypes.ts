@@ -1,5 +1,5 @@
-import type { NormalizedPoint } from '../../../core/types';
-import type { PerspectivePoint } from '../correction/perspectiveTransform';
+import type { NormalizedPoint } from '../../core/types';
+import type { PerspectivePoint } from '../floor-plan/perspectiveTransform';
 
 export type FloorPlanCorner = PerspectivePoint;
 
@@ -56,7 +56,7 @@ export type ResolveNavigationIntentResult =
       message: string;
     };
 
-export type NavigationSessionApi = {
+export type NavigationBackend = {
   detectFloorPlanCorners(
     request: DetectFloorPlanCornersRequest,
   ): Promise<DetectFloorPlanCornersResult>;
