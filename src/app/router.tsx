@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { AccountPage } from '../pages/AccountPage';
+import { HelpPage } from '../pages/HelpPage';
 import { HistoryPage } from '../pages/HistoryPage';
 import { HomePage } from '../pages/HomePage';
 
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
       {
         path: 'account',
         element: <AccountPage />,
+      },
+      {
+        path: 'help',
+        element: <HelpPage />,
       },
       {
         path: '*',
