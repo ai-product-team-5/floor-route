@@ -28,6 +28,7 @@ VITE_FLOOR_ROUTE_API_BASE_URL=http://localhost:8787
 
 ```text
 POST /api/navigation/analyze-floor-plan
+POST /api/navigation/search-destinations
 POST /api/navigation/resolve-intent
 ```
 
@@ -150,6 +151,34 @@ VISION_MODEL_API_KEY
 ```json
 {
   "message": "已识别平面图。请描述你想去的位置。"
+}
+```
+
+### `POST /api/navigation/search-destinations`
+
+请求体和前端 `SearchDestinationCandidatesRequest` 对齐：
+
+```json
+{
+  "imageDataUrl": "data:image/jpeg;base64,...",
+  "query": "卫生间",
+  "limit": 5
+}
+```
+
+返回：
+
+```json
+{
+  "message": "已找到可能匹配的目的地，请选择最准确的一项。",
+  "candidates": [
+    {
+      "id": "restroom-east",
+      "title": "卫生间",
+      "subtitle": "东侧电梯厅旁",
+      "confidence": 0.92
+    }
+  ]
 }
 ```
 
