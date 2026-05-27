@@ -1,22 +1,13 @@
-import { backendConfig } from '../backendConfig';
-import { localNavigationBackend } from './localNavigationBackend';
-import { remoteNavigationBackend } from './remoteNavigationBackend';
-
-export const navigationBackend =
-  backendConfig.mode === 'remote' ? remoteNavigationBackend : localNavigationBackend;
+export { navigationBackend } from './remoteNavigationBackend';
 
 export type {
-  AnalyzeFloorPlanRequest,
-  AnalyzeFloorPlanResult,
-  CorrectFloorPlanPerspectiveRequest,
-  CorrectFloorPlanPerspectiveResult,
   DestinationCandidate,
-  DetectFloorPlanCornersRequest,
-  DetectFloorPlanCornersResult,
+  DetectCornersRequest,
+  DetectCornersResult,
   FloorPlanCorner,
+  GeneratePathRequest,
+  GeneratePathResult,
   NavigationBackend,
-  ResolveNavigationIntentRequest,
-  ResolveNavigationIntentResult,
-  SearchDestinationCandidatesRequest,
-  SearchDestinationCandidatesResult,
+  SearchDestinationsRequest,
+  SearchDestinationsResult,
 } from './navigationBackendTypes';

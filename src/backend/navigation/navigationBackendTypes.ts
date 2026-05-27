@@ -1,35 +1,20 @@
-import type { NormalizedPoint } from '../../core/types';
 import type { PerspectivePoint } from '../floor-plan/perspectiveTransform';
 
 export type FloorPlanCorner = PerspectivePoint;
 
-export type DetectFloorPlanCornersRequest = {
+export type DetectCornersRequest = {
   imageDataUrl: string;
 };
 
-export type DetectFloorPlanCornersResult = {
+export type DetectCornersResult = {
   corners: FloorPlanCorner[];
-  source: 'detected' | 'fallback';
-  confidence?: number;
-  method?: string;
   message?: string;
 };
 
-export type CorrectFloorPlanPerspectiveRequest = {
+export type SearchDestinationsRequest = {
   imageDataUrl: string;
-  corners: FloorPlanCorner[];
-};
-
-export type CorrectFloorPlanPerspectiveResult = {
-  correctedImageDataUrl: string;
-};
-
-export type AnalyzeFloorPlanRequest = {
-  imageDataUrl: string;
-};
-
-export type AnalyzeFloorPlanResult = {
-  message: string;
+  query: string;
+  limit?: number;
 };
 
 export type DestinationCandidate = {
@@ -39,54 +24,23 @@ export type DestinationCandidate = {
   confidence: number;
 };
 
-export type SearchDestinationCandidatesRequest = {
-  imageDataUrl: string;
-  query: string;
-  limit?: number;
-};
-
-export type SearchDestinationCandidatesResult = {
+export type SearchDestinationsResult = {
   candidates: DestinationCandidate[];
   message: string;
 };
 
-export type ResolveNavigationIntentRequest = {
+export type GeneratePathRequest = {
   imageDataUrl: string;
-  prompt: string;
-  previousPrompt?: string;
-  destinationCandidate?: DestinationCandidate;
+  destination: string;
 };
 
-export type ResolveNavigationIntentResult =
-  | {
-      type: 'route-found';
-      destinationText: string;
-      resultImageUrl: string;
-      path: NormalizedPoint[];
-      message: string;
-    }
-  | {
-      type: 'need-more-info';
-      destinationText: string;
-      message: string;
-    }
-  | {
-      type: 'unsupported-intent';
-      message: string;
-    };
+export type GeneratePathResult = {
+  resultImageUrl: string;
+  message: string;
+};
 
 export type NavigationBackend = {
-  detectFloorPlanCorners(
-    request: DetectFloorPlanCornersRequest,
-  ): Promise<DetectFloorPlanCornersResult>;
-  correctFloorPlanPerspective(
-    request: CorrectFloorPlanPerspectiveRequest,
-  ): Promise<CorrectFloorPlanPerspectiveResult>;
-  analyzeFloorPlan(request: AnalyzeFloorPlanRequest): Promise<AnalyzeFloorPlanResult>;
-  searchDestinationCandidates(
-    request: SearchDestinationCandidatesRequest,
-  ): Promise<SearchDestinationCandidatesResult>;
-  resolveNavigationIntent(
-    request: ResolveNavigationIntentRequest,
-  ): Promise<ResolveNavigationIntentResult>;
+  detectCorners(request: DetectCornersRequest): Promise<DetectCornersResult>;
+  searchDestinations(request: SearchDestinationsRequest): Promise<SearchDestinationsResult>;
+  generatePath(request: GeneratePathRequest): Promise<GeneratePathResult>;
 };

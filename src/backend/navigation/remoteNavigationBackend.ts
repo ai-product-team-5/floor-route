@@ -1,37 +1,33 @@
 import { backendConfig } from '../backendConfig';
 import { createBackendAuthHeaders } from '../auth/authHeaders';
-import { localNavigationBackend } from './localNavigationBackend';
 import type {
-  AnalyzeFloorPlanRequest,
-  AnalyzeFloorPlanResult,
+  DetectCornersRequest,
+  DetectCornersResult,
+  GeneratePathRequest,
+  GeneratePathResult,
   NavigationBackend,
-  ResolveNavigationIntentRequest,
-  ResolveNavigationIntentResult,
-  SearchDestinationCandidatesRequest,
-  SearchDestinationCandidatesResult,
+  SearchDestinationsRequest,
+  SearchDestinationsResult,
 } from './navigationBackendTypes';
 
-export const remoteNavigationBackend: NavigationBackend = {
-  detectFloorPlanCorners: localNavigationBackend.detectFloorPlanCorners,
-  correctFloorPlanPerspective: localNavigationBackend.correctFloorPlanPerspective,
-
-  analyzeFloorPlan(request) {
-    return postBackendJson<AnalyzeFloorPlanRequest, AnalyzeFloorPlanResult>(
-      '/api/navigation/analyze-floor-plan',
+export const navigationBackend: NavigationBackend = {
+  detectCorners(request) {
+    return postBackendJson<DetectCornersRequest, DetectCornersResult>(
+      '/api/corner',
       request,
     );
   },
 
-  searchDestinationCandidates(request) {
-    return postBackendJson<SearchDestinationCandidatesRequest, SearchDestinationCandidatesResult>(
-      '/api/navigation/search-destinations',
+  searchDestinations(request) {
+    return postBackendJson<SearchDestinationsRequest, SearchDestinationsResult>(
+      '/api/search',
       request,
     );
   },
 
-  resolveNavigationIntent(request) {
-    return postBackendJson<ResolveNavigationIntentRequest, ResolveNavigationIntentResult>(
-      '/api/navigation/resolve-intent',
+  generatePath(request) {
+    return postBackendJson<GeneratePathRequest, GeneratePathResult>(
+      '/api/path',
       request,
     );
   },
@@ -42,7 +38,7 @@ async function postBackendJson<RequestBody, ResponseBody>(
   body: RequestBody,
 ): Promise<ResponseBody> {
   if (!backendConfig.apiBaseUrl) {
-    throw new Error('远程 API 未配置。请设置 VITE_FLOOR_ROUTE_API_BASE_URL。');
+    throw new Error('API 未配置。请设置 VITE_FLOOR_ROUTE_API_BASE_URL。');
   }
 
   const response = await fetch(`${backendConfig.apiBaseUrl}${path}`, {
@@ -64,8 +60,8 @@ async function postBackendJson<RequestBody, ResponseBody>(
 async function createBackendErrorMessage(response: Response) {
   try {
     const data = (await response.json()) as { error?: string; message?: string };
-    return data.message || data.error || `远程 API 请求失败：${response.status}`;
+    return data.message || data.error || `API 请求失败：${response.status}`;
   } catch {
-    return `远程 API 请求失败：${response.status}`;
+    return `API 请求失败：${response.status}`;
   }
 }
