@@ -48,8 +48,6 @@ export function AccountPage() {
   const [hasApiKey, setHasApiKey] = useState(() => Boolean(getFloorRouteApiKey()));
   const [isApiKeySaved, setIsApiKeySaved] = useState(false);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
-  const [updateToast, setUpdateToast] = useState('');
 
   function saveApiKey() {
     setFloorRouteApiKey(apiKeyInput);
@@ -86,11 +84,6 @@ export function AccountPage() {
 
     return () => { isCurrent = false; };
   }, [hasApiKey, isApiKeySaved]);
-
-  function handleUpdate() {
-    setUpdateToast('已是最新版本 (v0.1.0)');
-    setTimeout(() => setUpdateToast(''), 2500);
-  }
 
   function openProfileEditor() {
     setDraftName(profileName);
@@ -241,7 +234,7 @@ export function AccountPage() {
             <span>购买 API</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
-          <button type="button" onClick={() => setShowPurchaseHistory(true)}>
+          <button type="button" onClick={() => navigate('/purchase-history')}>
             <Clock3 aria-hidden="true" size={27} />
             <span>购买记录</span>
             <ChevronRight aria-hidden="true" size={27} />
@@ -251,29 +244,13 @@ export function AccountPage() {
             <span>帮助与反馈</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
-          <button type="button" onClick={handleUpdate}>
+          <button type="button" onClick={() => navigate('/update')}>
             <Upload aria-hidden="true" size={27} />
             <span>更新</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
         </div>
       </section>
-
-      {showPurchaseHistory && (
-        <div className="account-overlay" onClick={() => setShowPurchaseHistory(false)}>
-          <div className="account-overlay-content" onClick={(e) => e.stopPropagation()}>
-            <h3>购买记录</h3>
-            <p className="account-empty-state">暂无记录</p>
-            <button type="button" className="account-overlay-close" onClick={() => setShowPurchaseHistory(false)}>
-              关闭
-            </button>
-          </div>
-        </div>
-      )}
-
-      {updateToast && (
-        <div className="account-toast" role="status">{updateToast}</div>
-      )}
     </div>
   );
 }
