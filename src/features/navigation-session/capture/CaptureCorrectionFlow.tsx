@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import {
   captureErrorMessage,
   captureFromCamera,
@@ -13,12 +13,16 @@ type CaptureCorrectionFlowProps = {
   onConfirm: (correctedImageDataUrl: string) => void;
 };
 
+export type CaptureCorrectionFlowHandle = {
+  handleBack: () => boolean;
+};
+
 type CaptureStep = 'camera' | 'correction';
 
-export function CaptureCorrectionFlow({
+export const CaptureCorrectionFlow = forwardRef<CaptureCorrectionFlowHandle, CaptureCorrectionFlowProps>(function CaptureCorrectionFlow({
   onCancel,
   onConfirm,
-}: CaptureCorrectionFlowProps) {
+}, ref) {
   const [step, setStep] = useState<CaptureStep>('camera');
   const [imageDataUrl, setImageDataUrl] = useState('');
   const [captureError, setCaptureError] = useState('');
@@ -44,6 +48,17 @@ export function CaptureCorrectionFlow({
     }
   }
 
+  useImperativeHandle(ref, () => ({
+    handleBack() {
+      if (step === 'correction') {
+        setStep('camera');
+        return true;
+      }
+
+      return false;
+    },
+  }), [step]);
+
   if (step === 'correction' && imageDataUrl) {
     return (
       <PerspectiveCorrectionView
@@ -65,4 +80,4 @@ export function CaptureCorrectionFlow({
       onCancel={onCancel}
     />
   );
-}
+});

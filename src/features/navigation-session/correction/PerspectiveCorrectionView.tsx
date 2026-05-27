@@ -182,17 +182,24 @@ export function PerspectiveCorrectionView({
             className="correction-polygon-line"
           />
           {overlayPoints.map((point, index) => (
-            <circle
-              key={index}
-              cx={point.x}
-              cy={point.y}
-              r="13"
-              className="correction-point"
-              onPointerDown={(event) => {
-                event.currentTarget.setPointerCapture(event.pointerId);
-                setActivePoint(index);
-              }}
-            />
+            <g key={index}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="5"
+                className="correction-point-marker"
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r="18"
+                className="correction-point-hit"
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  setActivePoint(index);
+                }}
+              />
+            </g>
           ))}
         </svg>
       </div>

@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import type { RouteHistoryItem } from '../../core/types';
-import { CaptureCorrectionFlow } from './capture/CaptureCorrectionFlow';
-import { NavigationFlow } from './flow/NavigationFlow';
+import {
+  CaptureCorrectionFlow,
+  type CaptureCorrectionFlowHandle,
+} from './capture/CaptureCorrectionFlow';
+import { NavigationFlow, type NavigationFlowHandle } from './flow/NavigationFlow';
 
 type NavigationSessionProps = {
   initialRoute?: RouteHistoryItem;
   onClose: () => void;
+};
+
+export type NavigationSessionHandle = {
+  handleBack: () => boolean;
 };
 
 type SessionState =
@@ -13,10 +20,12 @@ type SessionState =
   | { stage: 'navigation'; imageDataUrl: string }
   | { stage: 'history-result'; route: RouteHistoryItem };
 
-export function NavigationSession({
+export const NavigationSession = forwardRef<NavigationSessionHandle, NavigationSessionProps>(function NavigationSession({
   initialRoute,
   onClose,
-}: NavigationSessionProps) {
+}, ref) {
+  const captureFlowRef = useRef<CaptureCorrectionFlowHandle | null>(null);
+  const navigationFlowRef = useRef<NavigationFlowHandle | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>(
     initialRoute ? { stage: 'history-result', route: initialRoute } : { stage: 'capture' },
   );
@@ -25,9 +34,24 @@ export function NavigationSession({
     setSessionState({ stage: 'capture' });
   }
 
+  useImperativeHandle(ref, () => ({
+    handleBack() {
+      if (sessionState.stage === 'capture') {
+        return captureFlowRef.current?.handleBack() ?? false;
+      }
+
+      if (sessionState.stage === 'navigation') {
+        return navigationFlowRef.current?.handleBack() ?? false;
+      }
+
+      return false;
+    },
+  }), [sessionState.stage]);
+
   if (sessionState.stage === 'capture') {
     return (
       <CaptureCorrectionFlow
+        ref={captureFlowRef}
         onCancel={onClose}
         onConfirm={(imageDataUrl) =>
           setSessionState({ stage: 'navigation', imageDataUrl })
@@ -39,6 +63,7 @@ export function NavigationSession({
   return (
     <div className="navigation-session">
       <NavigationFlow
+        ref={navigationFlowRef}
         initialRoute={
           sessionState.stage === 'history-result' ? sessionState.route : undefined
         }
@@ -49,4 +74,4 @@ export function NavigationSession({
       />
     </div>
   );
-}
+});
