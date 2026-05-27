@@ -1871,12 +1871,193 @@ h2 {
   color: rgba(255, 255, 255, 0.52);
 }
 
+/* Sub-pages (full-screen, no tab bar, dark theme) */
+
+.help-page,
+.purchase-history-page,
+.update-page {
+  width: min(100%, 480px);
+  height: 100dvh;
+  margin: 0 auto;
+  padding: calc(46px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #242424;
+  color: white;
+  overflow-y: auto;
+  scrollbar-width: none;
+  border-inline: 1px solid rgba(23, 33, 27, 0.08);
+}
+
+.help-page::-webkit-scrollbar,
+.purchase-history-page::-webkit-scrollbar,
+.update-page::-webkit-scrollbar {
+  display: none;
+}
+
+.help-header,
+.purchase-history-header,
+.update-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.help-header h1,
+.purchase-history-header h1,
+.update-header h1 {
+  color: white;
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.help-back-button,
+.purchase-history-back-button,
+.update-back-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: #3a3a3a;
+  color: white;
+  cursor: pointer;
+}
+
+.help-faq-section,
+.help-feedback-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.help-faq-section h2,
+.help-feedback-section h2 {
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.help-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.help-faq-item {
+  background: #3a3a3a;
+}
+
+.help-faq-item summary {
+  min-height: 52px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.help-faq-item summary::before {
+  content: "▸";
+  margin-right: 10px;
+  color: #9eef24;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.help-faq-item[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.help-faq-item p {
+  padding: 0 18px 14px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.help-feedback-section p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.help-issues-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: #9eef24;
+  color: #1d1d1d;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.purchase-history-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.purchase-history-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 16px;
+}
+
+.update-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.update-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #9eef24;
+}
+
+.update-version {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.update-message {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 15px;
+}
+
 @media (min-width: 768px) {
   body {
     background: #dfe6ea;
   }
 
   .app-shell {
+    height: min(100dvh, 920px);
+    margin-block: 18px;
+    border: 1px solid rgba(23, 33, 27, 0.12);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .help-page,
+  .purchase-history-page,
+  .update-page {
     height: min(100dvh, 920px);
     margin-block: 18px;
     border: 1px solid rgba(23, 33, 27, 0.12);

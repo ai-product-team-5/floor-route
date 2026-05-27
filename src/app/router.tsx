@@ -29,21 +29,21 @@ export const router = createBrowserRouter([
         element: <AccountPage />,
       },
       {
-        path: 'help',
-        element: <HelpPage />,
-      },
-      {
-        path: 'purchase-history',
-        element: <PurchaseHistoryPage />,
-      },
-      {
-        path: 'update',
-        element: <UpdatePage />,
-      },
-      {
         path: '*',
         element: <Navigate to="/home" replace />,
       },
     ],
+  },
+  {
+    path: '/help',
+    element: <HelpPage />,
+  },
+  {
+    path: '/purchase-history',
+    element: <PurchaseHistoryPage />,
+  },
+  {
+    path: '/update',
+    element: <UpdatePage />,
   },
 ]);
