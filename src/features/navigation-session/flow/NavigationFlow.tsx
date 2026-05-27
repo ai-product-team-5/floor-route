@@ -61,56 +61,15 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
           return true;
         case 'searching-destinations':
         case 'destination-candidates':
-        case 'analyzing-intent':
-        case 'needs-more-info':
-        case 'unsupported-intent':
+        case 'generating-path':
           dispatch({ type: 'destination-search-reset' });
           return true;
-        case 'analyzing-map':
-        case 'map-analysis-failed':
         case 'awaiting-intent':
           onRetake();
           return true;
       }
     },
   }), [initialRoute, onRetake, state.stage]);
-
-  useEffect(() => {
-    if (state.stage !== 'analyzing-map' || !state.imageDataUrl) {
-      return undefined;
-    }
-
-    let isCurrent = true;
-
-    async function analyzeImage() {
-      if (!state.imageDataUrl) return;
-
-      try {
-        const analysis = await navigationBackend.analyzeFloorPlan({
-          imageDataUrl: state.imageDataUrl,
-        });
-        if (isCurrent) {
-          dispatch({ type: 'map-analysis-finished', message: analysis.message });
-        }
-      } catch (error) {
-        if (isCurrent) {
-          dispatch({
-            type: 'map-analysis-failed',
-            message:
-              error instanceof Error
-                ? error.message
-                : '平面图分析失败，请检查图片模型配置后重试。',
-          });
-        }
-      }
-    }
-
-    void analyzeImage();
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [state.stage, state.imageDataUrl]);
 
   async function handleDestinationSearch() {
     if (!state.imageDataUrl || !state.promptText.trim()) {
@@ -122,7 +81,7 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
     dispatch({ type: 'destination-search-started' });
 
     try {
-      const result = await navigationBackend.searchDestinationCandidates({
+      const result = await navigationBackend.searchDestinations({
         imageDataUrl: state.imageDataUrl,
         query,
         limit: 5,
@@ -147,47 +106,25 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
     }
 
     setIsSaved(false);
-    dispatch({ type: 'intent-analysis-started' });
+    dispatch({ type: 'path-generation-started' });
 
-    let response;
     try {
-      response = await navigationBackend.resolveNavigationIntent({
+      const result = await navigationBackend.generatePath({
         imageDataUrl: state.imageDataUrl,
-        prompt: candidate.title,
-        previousPrompt: state.promptText || undefined,
-        destinationCandidate: candidate,
+        destination: candidate.title,
+      });
+
+      dispatch({
+        type: 'path-generated',
+        destinationText: candidate.title,
+        resultImageUrl: result.resultImageUrl,
+        message: result.message,
       });
     } catch (error) {
       dispatch({
-        type: 'intent-analysis-failed',
-        message: error instanceof Error ? error.message : '意图识别失败，请检查配置后重试。',
+        type: 'path-generation-failed',
+        message: error instanceof Error ? error.message : '路径生成失败，请重试。',
       });
-      return;
-    }
-
-    switch (response.type) {
-      case 'route-found':
-        dispatch({
-          type: 'route-found',
-          destinationText: response.destinationText,
-          resultImageUrl: response.resultImageUrl,
-          path: response.path,
-          message: response.message,
-        });
-        return;
-      case 'need-more-info':
-        dispatch({
-          type: 'more-info-requested',
-          destinationText: response.destinationText,
-          message: response.message,
-        });
-        return;
-      case 'unsupported-intent':
-        dispatch({
-          type: 'unsupported-intent',
-          message: response.message,
-        });
-        return;
     }
   }
 
@@ -203,7 +140,6 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
       endText: state.destinationText,
       originalImageUrl: state.imageDataUrl,
       resultImageUrl: state.resultImageUrl,
-      path: state.path,
       mode: state.mode,
     };
 
@@ -213,24 +149,6 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
 
   function renderStep() {
     switch (state.stage) {
-      case 'analyzing-map':
-        if (!state.imageDataUrl) return null;
-
-        return (
-          <NavigationWorkspaceStep
-            imageUrl={state.imageDataUrl}
-            bottom={{ type: 'status', label: '正在分析平面图' }}
-          />
-        );
-      case 'map-analysis-failed':
-        if (!state.imageDataUrl) return null;
-
-        return (
-          <NavigationWorkspaceStep
-            imageUrl={state.imageDataUrl}
-            bottom={{ type: 'status', label: state.agentMessage }}
-          />
-        );
       case 'awaiting-intent':
         if (!state.imageDataUrl) return null;
 
@@ -291,7 +209,7 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
             }}
           />
         );
-      case 'analyzing-intent':
+      case 'generating-path':
         if (!state.imageDataUrl) return null;
 
         return (
@@ -300,61 +218,19 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
             bottom={{ type: 'status', label: '正在生成路线' }}
           />
         );
-      case 'needs-more-info':
-        if (!state.imageDataUrl) return null;
-
-        return (
-          <NavigationWorkspaceStep
-            imageUrl={state.imageDataUrl}
-            bottom={{
-              type: 'destination-search',
-              promptText: state.promptText,
-              placeholder: '搜索一下',
-              message: state.agentMessage || '请补充目的地信息',
-              candidates: [],
-              onPromptChange: (value) =>
-                dispatch({ type: 'intent-text-changed', value }),
-              onSubmit: () => void handleDestinationSearch(),
-              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
-              onBack: onRetake,
-            }}
-          />
-        );
-      case 'unsupported-intent':
-        if (!state.imageDataUrl) return null;
-
-        return (
-          <NavigationWorkspaceStep
-            imageUrl={state.imageDataUrl}
-            bottom={{
-              type: 'destination-search',
-              promptText: state.promptText,
-              placeholder: '搜索一下',
-              message: state.agentMessage || '请告诉我你想去哪里',
-              candidates: [],
-              onPromptChange: (value) =>
-                dispatch({ type: 'intent-text-changed', value }),
-              onSubmit: () => void handleDestinationSearch(),
-              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
-              onBack: onRetake,
-            }}
-          />
-        );
       case 'show-result':
         if (!state.resultImageUrl) return null;
 
         return (
           <AgentRouteResultStep
             imageUrl={state.resultImageUrl}
-            path={state.path}
             destinationText={state.destinationText}
             isSaved={isSaved}
             onSave={() => void handleSave()}
             onRevise={() =>
               dispatch({
-                type: 'more-info-requested',
-                destinationText: state.destinationText,
-                message: '请补充或重新描述你的目的地。',
+                type: 'destination-search-reset',
+                message: '请重新搜索目的地。',
               })
             }
             onReset={onRetake}

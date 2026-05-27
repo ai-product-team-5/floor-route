@@ -2,6 +2,7 @@ import { ArrowLeft, Check, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { navigationBackend } from '../../../backend/navigation/navigationBackend';
 import type { PerspectivePoint } from '../../../backend/floor-plan/perspectiveTransform';
+import { correctPerspective } from '../../../backend/floor-plan/perspectiveTransform';
 
 type PerspectiveCorrectionViewProps = {
   imageDataUrl: string;
@@ -45,7 +46,7 @@ export function PerspectiveCorrectionView({
 
     async function detectCorners() {
       try {
-        const result = await navigationBackend.detectFloorPlanCorners({
+        const result = await navigationBackend.detectCorners({
           imageDataUrl,
         });
 
@@ -55,13 +56,8 @@ export function PerspectiveCorrectionView({
           setPoints(result.corners);
         }
 
-        setDetectionState(result.source === 'detected' ? 'detected' : 'fallback');
-        setDetectionMessage(
-          result.message ??
-            (result.source === 'detected'
-              ? '已自动框选边框，可调整后确认。'
-              : '请拖动四角校正平面图边框。'),
-        );
+        setDetectionState('detected');
+        setDetectionMessage(result.message ?? '已自动框选边框，可调整后确认。');
       } catch {
         if (isCurrent) {
           setDetectionState('failed');
@@ -126,12 +122,8 @@ export function PerspectiveCorrectionView({
     setIsApplying(true);
 
     try {
-      const result = await navigationBackend.correctFloorPlanPerspective({
-        imageDataUrl,
-        corners: points,
-      });
-
-      onConfirm(result.correctedImageDataUrl);
+      const correctedImageDataUrl = await correctPerspective(imageDataUrl, points);
+      onConfirm(correctedImageDataUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : '图片校正失败，请重试。';
       setErrorMessage(message);

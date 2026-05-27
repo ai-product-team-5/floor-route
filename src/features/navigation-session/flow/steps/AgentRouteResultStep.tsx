@@ -1,10 +1,7 @@
 import { RefreshCw, Save } from 'lucide-react';
-import type { NormalizedPoint } from '../../../../core/types';
-import { RouteOverlay } from '../../result/RouteOverlay';
 
 type AgentRouteResultStepProps = {
   imageUrl: string;
-  path: NormalizedPoint[];
   destinationText: string;
   isSaved: boolean;
   onSave: () => void;
@@ -14,7 +11,6 @@ type AgentRouteResultStepProps = {
 
 export function AgentRouteResultStep({
   imageUrl,
-  path,
   destinationText,
   isSaved,
   onSave,
@@ -30,7 +26,6 @@ export function AgentRouteResultStep({
 
       <div className="agent-map-frame result">
         <img src={imageUrl} alt="带路径标注的平面图" />
-        <RouteOverlay path={path} />
       </div>
 
       <button type="button" className="primary-button full-width" disabled={isSaved} onClick={onSave}>

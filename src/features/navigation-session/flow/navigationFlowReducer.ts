@@ -7,14 +7,13 @@ type NavigationFlowInitialInput = {
 };
 
 export const initialNavigationFlowState: NavigationFlowState = {
-  stage: 'analyzing-map',
+  stage: 'awaiting-intent',
   imageDataUrl: undefined,
   resultImageUrl: undefined,
-  path: [],
   promptText: '',
   destinationCandidates: [],
   destinationText: '',
-  agentMessage: '',
+  agentMessage: '请描述你想去的位置。',
   mode: 'ai-image',
 };
 
@@ -29,7 +28,6 @@ export function createNavigationFlowState(
     return {
       ...initialNavigationFlowState,
       imageDataUrl: input.initialImageDataUrl,
-      stage: 'analyzing-map',
     };
   }
 
@@ -41,18 +39,6 @@ export function navigationFlowReducer(
   action: NavigationFlowAction,
 ): NavigationFlowState {
   switch (action.type) {
-    case 'map-analysis-finished':
-      return {
-        ...state,
-        agentMessage: action.message,
-        stage: 'awaiting-intent',
-      };
-    case 'map-analysis-failed':
-      return {
-        ...state,
-        agentMessage: action.message,
-        stage: 'map-analysis-failed',
-      };
     case 'intent-text-changed':
       return {
         ...state,
@@ -89,46 +75,30 @@ export function navigationFlowReducer(
         destinationCandidates: [],
         stage: 'destination-candidates',
       };
-    case 'intent-analysis-started':
+    case 'path-generation-started':
       return state.imageDataUrl
         ? {
             ...state,
             agentMessage: '',
-            stage: 'analyzing-intent',
+            stage: 'generating-path',
           }
         : state;
-    case 'intent-analysis-failed':
+    case 'path-generation-failed':
       return {
         ...state,
         promptText: '',
         agentMessage: action.message,
-        stage: 'needs-more-info',
+        stage: 'awaiting-intent',
       };
-    case 'route-found':
+    case 'path-generated':
       return {
         ...state,
         destinationText: action.destinationText,
         promptText: '',
         resultImageUrl: action.resultImageUrl,
-        path: action.path,
         agentMessage: action.message,
         mode: 'ai-image',
         stage: 'show-result',
-      };
-    case 'more-info-requested':
-      return {
-        ...state,
-        destinationText: action.destinationText,
-        promptText: '',
-        agentMessage: action.message,
-        stage: 'needs-more-info',
-      };
-    case 'unsupported-intent':
-      return {
-        ...state,
-        promptText: '',
-        agentMessage: action.message,
-        stage: 'unsupported-intent',
       };
   }
 }
@@ -138,7 +108,6 @@ function routeHistoryItemToState(item: RouteHistoryItem): NavigationFlowState {
     stage: 'show-result',
     imageDataUrl: item.originalImageUrl,
     resultImageUrl: item.resultImageUrl ?? item.originalImageUrl,
-    path: item.path ?? [],
     promptText: '',
     destinationCandidates: [],
     destinationText: item.endText,
