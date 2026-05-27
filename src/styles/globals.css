@@ -1877,7 +1877,7 @@ h2 {
 .purchase-history-page,
 .update-page {
   width: min(100%, 480px);
-  height: 100dvh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: calc(46px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
   display: flex;
