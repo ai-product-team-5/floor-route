@@ -2065,5 +2065,6 @@ h2 {
     border: 1px solid rgba(23, 33, 27, 0.12);
     border-radius: 18px;
     overflow: hidden;
+    overflow-y: auto;
   }
 }
