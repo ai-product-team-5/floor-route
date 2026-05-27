@@ -1,11 +1,14 @@
-import { Check, Database, KeyRound, Trash2, WifiOff } from 'lucide-react';
+import { Check, ChevronRight, Clock3, HelpCircle, ImagePlus, KeyRound, Package, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { backendConfig } from '../backend/backendConfig';
 import {
-  clearFloorRouteApiKey,
   getFloorRouteApiKey,
   setFloorRouteApiKey,
 } from '../backend/auth/floorRouteApiKey';
+import {
+  captureErrorMessage,
+  chooseFromGallery,
+  isCaptureCancelled,
+} from '../features/navigation-session/capture/captureImage';
 
 function getDeviceId() {
   const key = 'floor-route-device-id';
@@ -20,99 +23,202 @@ function getDeviceId() {
   return next;
 }
 
+function getProfileName() {
+  return window.localStorage.getItem('floor-route-profile-name') || '游客用户';
+}
+
+function getProfileAvatar() {
+  return window.localStorage.getItem('floor-route-profile-avatar') || '';
+}
+
 export function AccountPage() {
   const [deviceId] = useState(getDeviceId);
+  const [profileName, setProfileName] = useState(getProfileName);
+  const [avatarUrl, setAvatarUrl] = useState(getProfileAvatar);
+  const [draftName, setDraftName] = useState(profileName);
+  const [draftAvatarUrl, setDraftAvatarUrl] = useState(avatarUrl);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const [isPickingAvatar, setIsPickingAvatar] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getFloorRouteApiKey);
   const [hasApiKey, setHasApiKey] = useState(() => Boolean(getFloorRouteApiKey()));
-  const [saveMessage, setSaveMessage] = useState('');
+  const [isApiKeySaved, setIsApiKeySaved] = useState(false);
 
   function saveApiKey() {
     setFloorRouteApiKey(apiKeyInput);
     setHasApiKey(Boolean(apiKeyInput.trim()));
-    setSaveMessage(apiKeyInput.trim() ? '已保存 API key。' : '已清除 API key。');
+    setIsApiKeySaved(true);
   }
 
-  function clearApiKey() {
-    clearFloorRouteApiKey();
-    setApiKeyInput('');
-    setHasApiKey(false);
-    setSaveMessage('已清除 API key。');
+  const usedQuota = hasApiKey ? 65 : 0;
+  const totalQuota = 100;
+  const quotaPercent = Math.round((usedQuota / totalQuota) * 100);
+
+  function openProfileEditor() {
+    setDraftName(profileName);
+    setDraftAvatarUrl(avatarUrl);
+    setAvatarError('');
+    setIsEditingProfile(true);
+  }
+
+  async function pickAvatarFromGallery() {
+    if (isPickingAvatar) {
+      return;
+    }
+
+    setIsPickingAvatar(true);
+    setAvatarError('');
+
+    try {
+      const dataUrl = await chooseFromGallery();
+      setDraftAvatarUrl(dataUrl);
+    } catch (error) {
+      if (!isCaptureCancelled(error)) {
+        setAvatarError(captureErrorMessage(error));
+      }
+    } finally {
+      setIsPickingAvatar(false);
+    }
+  }
+
+  function saveProfile() {
+    const nextName = draftName.trim() || '游客用户';
+    const nextAvatarUrl = draftAvatarUrl.trim();
+    window.localStorage.setItem('floor-route-profile-name', nextName);
+
+    if (nextAvatarUrl) {
+      window.localStorage.setItem('floor-route-profile-avatar', nextAvatarUrl);
+    } else {
+      window.localStorage.removeItem('floor-route-profile-avatar');
+    }
+
+    setProfileName(nextName);
+    setAvatarUrl(nextAvatarUrl);
+    setIsEditingProfile(false);
+  }
+
+  if (isEditingProfile) {
+    return (
+      <div className="account-page profile-editor-page">
+        <header className="profile-editor-header">
+          <button type="button" onClick={() => setIsEditingProfile(false)}>
+            取消
+          </button>
+          <h1>编辑资料</h1>
+          <button type="button" onClick={saveProfile}>
+            保存
+          </button>
+        </header>
+
+        <section className="profile-editor-card">
+          <button
+            type="button"
+            className="profile-editor-avatar-button"
+            onClick={pickAvatarFromGallery}
+            disabled={isPickingAvatar}
+            aria-label="从图库中选择头像"
+          >
+            <span
+              className="profile-editor-avatar"
+              style={draftAvatarUrl ? { backgroundImage: `url(${draftAvatarUrl})` } : undefined}
+              aria-hidden="true"
+            />
+            <span className="profile-editor-avatar-overlay" aria-hidden="true">
+              <ImagePlus size={22} strokeWidth={2.4} />
+            </span>
+          </button>
+          <p className="profile-editor-avatar-hint">
+            {isPickingAvatar ? '正在打开图库…' : '点击头像从图库中选择'}
+          </p>
+          {avatarError ? (
+            <p className="profile-editor-avatar-error" role="alert">
+              {avatarError}
+            </p>
+          ) : null}
+          <label className="profile-editor-field">
+            昵称
+            <input
+              value={draftName}
+              placeholder="游客用户"
+              onChange={(event) => setDraftName(event.target.value)}
+            />
+          </label>
+        </section>
+      </div>
+    );
   }
 
   return (
-    <div className="page-stack">
-      <section className="panel account-hero">
-        <div className="avatar" aria-hidden="true">
-          方
+    <div className="account-page">
+      <button type="button" className="account-profile" onClick={openProfileEditor}>
+        <div
+          className="account-avatar"
+          style={avatarUrl ? { backgroundImage: `url(${avatarUrl})` } : undefined}
+          aria-hidden="true"
+        />
+        <div className="account-profile-main">
+          <h2>{profileName}</h2>
+          <p>ID:{deviceId.slice(0, 10)}</p>
         </div>
-        <div>
-          <p className="section-kicker">FloorRoute</p>
-          <h2>游客用户</h2>
-          <p className="muted">本机设备 ID：{deviceId.slice(0, 18)}</p>
-        </div>
-      </section>
+        <ChevronRight aria-hidden="true" size={32} strokeWidth={2.4} />
+      </button>
 
-      <section className="panel api-key-panel">
-        <div className="api-key-header">
-          <div>
-            <p className="section-kicker">API Key</p>
-            <h2>远程服务额度</h2>
-          </div>
-          <span className={hasApiKey ? 'api-key-state saved' : 'api-key-state'}>
-            {hasApiKey ? '已设置' : '未设置'}
-          </span>
-        </div>
-        <label className="field-label">
-          FloorRoute API key
+      <section className="account-api-card">
+        <label className="account-key-field">
+          <KeyRound aria-hidden="true" size={17} />
           <input
             type="password"
             value={apiKeyInput}
-            placeholder="fr_live_xxx"
+            placeholder="输入 API key"
             autoComplete="off"
             onChange={(event) => {
               setApiKeyInput(event.target.value);
-              setSaveMessage('');
+              setIsApiKeySaved(false);
             }}
           />
+          <button
+            type="button"
+            onClick={saveApiKey}
+            disabled={isApiKeySaved}
+            aria-label={isApiKeySaved ? 'API key 已保存' : '保存 API key'}
+          >
+            <Check aria-hidden="true" size={21} strokeWidth={2.6} />
+          </button>
         </label>
-        <div className="api-key-actions">
-          <button type="button" className="primary-button" onClick={saveApiKey}>
-            <Check aria-hidden="true" size={18} />
-            保存
-          </button>
-          <button type="button" className="secondary-button" onClick={clearApiKey}>
-            <Trash2 aria-hidden="true" size={18} />
-            清除
-          </button>
-        </div>
-        {saveMessage && <p className="inline-status">{saveMessage}</p>}
-      </section>
 
-      <section className="panel metric-panel">
-        <div className="metric-row">
-          <Database aria-hidden="true" size={20} />
-          <span>服务模式</span>
-          <strong>{backendConfig.mode === 'remote' ? '远程' : '本地'}</strong>
+        <div className="account-quota-row">
+          <span>已使用算力</span>
+          <strong>{usedQuota}/{totalQuota}</strong>
         </div>
-        <div className="metric-row">
-          <WifiOff aria-hidden="true" size={20} />
-          <span>后端状态</span>
-          <strong>{backendConfig.mode === 'remote' && hasApiKey ? '已配置' : '未连接'}</strong>
-        </div>
-        <div className="metric-row">
-          <KeyRound aria-hidden="true" size={20} />
-          <span>额度凭证</span>
-          <strong>{hasApiKey ? '本机保存' : '未保存'}</strong>
+        <div className="account-quota-track" aria-hidden="true">
+          <span style={{ width: `${quotaPercent}%` }} />
         </div>
       </section>
 
-      <section className="about-block">
-        <h2>关于 方寸识途</h2>
-        <p>
-          FloorRoute 是一个 mobile-first 的室内平面图路径标注 App。第一阶段先完成本地流程闭环，
-          后续再接 AI API 和手动路径标注。
-        </p>
-        <span>FloorRoute 0.1.0</span>
+      <section className="account-menu-section">
+        <h2>其他</h2>
+        <div className="account-menu-card">
+          <button type="button">
+            <Package aria-hidden="true" size={27} />
+            <span>购买 API</span>
+            <ChevronRight aria-hidden="true" size={27} />
+          </button>
+          <button type="button">
+            <Clock3 aria-hidden="true" size={27} />
+            <span>购买记录</span>
+            <ChevronRight aria-hidden="true" size={27} />
+          </button>
+          <button type="button">
+            <HelpCircle aria-hidden="true" size={27} />
+            <span>帮助与反馈</span>
+            <ChevronRight aria-hidden="true" size={27} />
+          </button>
+          <button type="button">
+            <Upload aria-hidden="true" size={27} />
+            <span>更新</span>
+            <ChevronRight aria-hidden="true" size={27} />
+          </button>
+        </div>
       </section>
     </div>
   );

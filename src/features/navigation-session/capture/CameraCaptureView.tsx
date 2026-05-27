@@ -1,6 +1,6 @@
 import { Camera } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
-import { ImagePlus, MoreVertical, X, ZapOff } from 'lucide-react';
+import { Image, Undo2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 type CameraCaptureViewProps = {
@@ -101,18 +101,7 @@ export function CameraCaptureView({
     <section className="camera-capture-view">
       <video ref={videoRef} className="camera-preview" playsInline muted />
       <div className="camera-scrim" />
-
-      <button type="button" className="camera-close-button" onClick={onCancel} aria-label="关闭">
-        <X aria-hidden="true" size={29} />
-      </button>
-
-      <div className="camera-top-tools" aria-hidden="true">
-        <ZapOff size={27} />
-        <span>HD</span>
-        <MoreVertical size={29} />
-      </div>
-
-      <p className="camera-hint">将平面图放入画面内</p>
+      <div className="camera-scan-frame" aria-hidden="true" />
 
       {status && (
         <div className="camera-fallback-panel">
@@ -123,13 +112,14 @@ export function CameraCaptureView({
         </div>
       )}
 
-      <div className="camera-mode-strip">
-        <span>平面图</span>
-      </div>
-
       <div className="camera-controls">
-        <button type="button" className="camera-gallery-button" onClick={onChooseFromGallery}>
-          <ImagePlus aria-hidden="true" size={26} />
+        <button
+          type="button"
+          className="camera-control-button camera-cancel-button"
+          onClick={onCancel}
+          aria-label="返回"
+        >
+          <Undo2 aria-hidden="true" size={29} strokeWidth={2.5} />
         </button>
         <button
           type="button"
@@ -138,6 +128,14 @@ export function CameraCaptureView({
           onClick={captureFrame}
           aria-label="拍摄"
         />
+        <button
+          type="button"
+          className="camera-control-button camera-gallery-button"
+          onClick={onChooseFromGallery}
+          aria-label="从图库选择"
+        >
+          <Image aria-hidden="true" size={27} strokeWidth={2.5} />
+        </button>
       </div>
     </section>
   );
