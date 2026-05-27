@@ -1876,8 +1876,9 @@ h2 {
 .help-page,
 .purchase-history-page,
 .update-page {
+  position: fixed;
+  inset: 0;
   width: min(100%, 480px);
-  height: 100dvh;
   margin: 0 auto;
   padding: calc(46px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
   display: flex;
@@ -1888,6 +1889,7 @@ h2 {
   overflow-y: auto;
   scrollbar-width: none;
   border-inline: 1px solid rgba(23, 33, 27, 0.08);
+  z-index: 100;
 }
 
 .help-page::-webkit-scrollbar,
