@@ -32,6 +32,16 @@ type ChatCompletionResponse = {
 export async function resolveNavigationIntentWithTextModel(
   request: ResolveNavigationIntentRequest,
 ): Promise<ResolveNavigationIntentResult> {
+  if (request.destinationCandidate) {
+    return {
+      type: 'route-found',
+      destinationText: request.destinationCandidate.title,
+      resultImageUrl: request.imageDataUrl,
+      path: createDemoPath(),
+      message: '已根据候选目的地生成路径。',
+    };
+  }
+
   if (
     !backendConfig.textModelBaseUrl ||
     !backendConfig.textModelApiKey ||

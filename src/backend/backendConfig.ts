@@ -1,12 +1,15 @@
 export type BackendMode = 'local' | 'remote';
 export type IntentRecognitionMode = 'mock' | 'text-model';
 export type FloorPlanAnalysisMode = 'mock' | 'vision-model';
+export type DestinationSearchMode = 'mock' | 'vision-model';
 
 const rawMode = import.meta.env.VITE_FLOOR_ROUTE_BACKEND_MODE?.toLowerCase();
 const rawIntentRecognitionMode =
   import.meta.env.VITE_FLOOR_ROUTE_INTENT_RECOGNITION_MODE?.toLowerCase();
 const rawFloorPlanAnalysisMode =
   import.meta.env.VITE_FLOOR_ROUTE_FLOOR_PLAN_ANALYSIS_MODE?.toLowerCase();
+const rawDestinationSearchMode =
+  import.meta.env.VITE_FLOOR_ROUTE_DESTINATION_SEARCH_MODE?.toLowerCase();
 const modelBaseUrl = normalizeBaseUrl(import.meta.env.VITE_FLOOR_ROUTE_MODEL_BASE_URL);
 const modelApiKey = normalizeString(import.meta.env.VITE_FLOOR_ROUTE_MODEL_API_KEY);
 const modelName = normalizeString(import.meta.env.VITE_FLOOR_ROUTE_MODEL_NAME);
@@ -17,6 +20,8 @@ export const backendConfig = {
     rawIntentRecognitionMode === 'text-model' ? 'text-model' : 'mock',
   floorPlanAnalysisMode:
     rawFloorPlanAnalysisMode === 'vision-model' ? 'vision-model' : 'mock',
+  destinationSearchMode:
+    rawDestinationSearchMode === 'vision-model' ? 'vision-model' : 'mock',
   apiBaseUrl: normalizeBaseUrl(import.meta.env.VITE_FLOOR_ROUTE_API_BASE_URL),
   modelBaseUrl,
   modelApiKey,
@@ -37,6 +42,7 @@ export const backendConfig = {
   mode: BackendMode;
   intentRecognitionMode: IntentRecognitionMode;
   floorPlanAnalysisMode: FloorPlanAnalysisMode;
+  destinationSearchMode: DestinationSearchMode;
   apiBaseUrl: string;
   modelBaseUrl: string;
   modelApiKey: string;

@@ -32,10 +32,29 @@ export type AnalyzeFloorPlanResult = {
   message: string;
 };
 
+export type DestinationCandidate = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  confidence: number;
+};
+
+export type SearchDestinationCandidatesRequest = {
+  imageDataUrl: string;
+  query: string;
+  limit?: number;
+};
+
+export type SearchDestinationCandidatesResult = {
+  candidates: DestinationCandidate[];
+  message: string;
+};
+
 export type ResolveNavigationIntentRequest = {
   imageDataUrl: string;
   prompt: string;
   previousPrompt?: string;
+  destinationCandidate?: DestinationCandidate;
 };
 
 export type ResolveNavigationIntentResult =
@@ -64,6 +83,9 @@ export type NavigationBackend = {
     request: CorrectFloorPlanPerspectiveRequest,
   ): Promise<CorrectFloorPlanPerspectiveResult>;
   analyzeFloorPlan(request: AnalyzeFloorPlanRequest): Promise<AnalyzeFloorPlanResult>;
+  searchDestinationCandidates(
+    request: SearchDestinationCandidatesRequest,
+  ): Promise<SearchDestinationCandidatesResult>;
   resolveNavigationIntent(
     request: ResolveNavigationIntentRequest,
   ): Promise<ResolveNavigationIntentResult>;

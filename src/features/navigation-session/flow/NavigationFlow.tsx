@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useReducer, useState } from 'react';
+import type { DestinationCandidate } from '../../../backend/navigation/navigationBackend';
 import type { RouteHistoryItem } from '../../../core/types';
 import { useHistoryStore } from '../../../store/historyStore';
 import { navigationBackend } from '../../../backend/navigation/navigationBackend';
@@ -15,15 +16,19 @@ type NavigationFlowProps = {
   onRetake: () => void;
 };
 
+export type NavigationFlowHandle = {
+  handleBack: () => boolean;
+};
+
 function createHistoryId() {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function NavigationFlow({
+export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowProps>(function NavigationFlow({
   initialRoute,
   initialImageDataUrl,
   onRetake,
-}: NavigationFlowProps) {
+}, ref) {
   const [state, dispatch] = useReducer(
     navigationFlowReducer,
     { initialRoute, initialImageDataUrl },
@@ -39,6 +44,36 @@ export function NavigationFlow({
       void loadHistory();
     }
   }, [isHydrated, loadHistory]);
+
+  useImperativeHandle(ref, () => ({
+    handleBack() {
+      if (initialRoute) {
+        return false;
+      }
+
+      switch (state.stage) {
+        case 'show-result':
+          setIsSaved(false);
+          dispatch({
+            type: 'destination-search-reset',
+            message: '请重新搜索目的地。',
+          });
+          return true;
+        case 'searching-destinations':
+        case 'destination-candidates':
+        case 'analyzing-intent':
+        case 'needs-more-info':
+        case 'unsupported-intent':
+          dispatch({ type: 'destination-search-reset' });
+          return true;
+        case 'analyzing-map':
+        case 'map-analysis-failed':
+        case 'awaiting-intent':
+          onRetake();
+          return true;
+      }
+    },
+  }), [initialRoute, onRetake, state.stage]);
 
   useEffect(() => {
     if (state.stage !== 'analyzing-map' || !state.imageDataUrl) {
@@ -77,12 +112,40 @@ export function NavigationFlow({
     };
   }, [state.stage, state.imageDataUrl]);
 
-  async function handleIntentSubmit() {
+  async function handleDestinationSearch() {
     if (!state.imageDataUrl || !state.promptText.trim()) {
       return;
     }
 
-    const prompt = state.promptText.trim();
+    const query = state.promptText.trim();
+    setIsSaved(false);
+    dispatch({ type: 'destination-search-started' });
+
+    try {
+      const result = await navigationBackend.searchDestinationCandidates({
+        imageDataUrl: state.imageDataUrl,
+        query,
+        limit: 5,
+      });
+
+      dispatch({
+        type: 'destination-search-finished',
+        candidates: result.candidates,
+        message: result.message,
+      });
+    } catch (error) {
+      dispatch({
+        type: 'destination-search-failed',
+        message: error instanceof Error ? error.message : '目的地搜索失败，请重试。',
+      });
+    }
+  }
+
+  async function handleCandidateSelect(candidate: DestinationCandidate) {
+    if (!state.imageDataUrl) {
+      return;
+    }
+
     setIsSaved(false);
     dispatch({ type: 'intent-analysis-started' });
 
@@ -90,8 +153,9 @@ export function NavigationFlow({
     try {
       response = await navigationBackend.resolveNavigationIntent({
         imageDataUrl: state.imageDataUrl,
-        prompt,
-        previousPrompt: state.destinationText || undefined,
+        prompt: candidate.title,
+        previousPrompt: state.promptText || undefined,
+        destinationCandidate: candidate,
       });
     } catch (error) {
       dispatch({
@@ -174,12 +238,56 @@ export function NavigationFlow({
           <NavigationWorkspaceStep
             imageUrl={state.imageDataUrl}
             bottom={{
-              type: 'input',
+              type: 'destination-search',
               promptText: state.promptText,
-              placeholder: '请描述您的目的地',
+              placeholder: '搜索一下',
+              message: state.agentMessage,
+              candidates: [],
               onPromptChange: (value) =>
                 dispatch({ type: 'intent-text-changed', value }),
-              onSubmit: () => void handleIntentSubmit(),
+              onSubmit: () => void handleDestinationSearch(),
+              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
+              onBack: onRetake,
+            }}
+          />
+        );
+      case 'searching-destinations':
+        if (!state.imageDataUrl) return null;
+
+        return (
+          <NavigationWorkspaceStep
+            imageUrl={state.imageDataUrl}
+            bottom={{
+              type: 'destination-search',
+              promptText: state.promptText,
+              placeholder: '搜索一下',
+              candidates: [],
+              isSearching: true,
+              onPromptChange: (value) =>
+                dispatch({ type: 'intent-text-changed', value }),
+              onSubmit: () => void handleDestinationSearch(),
+              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
+              onBack: onRetake,
+            }}
+          />
+        );
+      case 'destination-candidates':
+        if (!state.imageDataUrl) return null;
+
+        return (
+          <NavigationWorkspaceStep
+            imageUrl={state.imageDataUrl}
+            bottom={{
+              type: 'destination-search',
+              promptText: state.promptText,
+              placeholder: '搜索一下',
+              message: state.agentMessage || '请选择最匹配的目的地。',
+              candidates: state.destinationCandidates,
+              onPromptChange: (value) =>
+                dispatch({ type: 'intent-text-changed', value }),
+              onSubmit: () => void handleDestinationSearch(),
+              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
+              onBack: onRetake,
             }}
           />
         );
@@ -189,7 +297,7 @@ export function NavigationFlow({
         return (
           <NavigationWorkspaceStep
             imageUrl={state.imageDataUrl}
-            bottom={{ type: 'status', label: '正在分析路线' }}
+            bottom={{ type: 'status', label: '正在生成路线' }}
           />
         );
       case 'needs-more-info':
@@ -199,12 +307,16 @@ export function NavigationFlow({
           <NavigationWorkspaceStep
             imageUrl={state.imageDataUrl}
             bottom={{
-              type: 'input',
+              type: 'destination-search',
               promptText: state.promptText,
-              placeholder: state.agentMessage || '请补充目的地信息',
+              placeholder: '搜索一下',
+              message: state.agentMessage || '请补充目的地信息',
+              candidates: [],
               onPromptChange: (value) =>
                 dispatch({ type: 'intent-text-changed', value }),
-              onSubmit: () => void handleIntentSubmit(),
+              onSubmit: () => void handleDestinationSearch(),
+              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
+              onBack: onRetake,
             }}
           />
         );
@@ -215,12 +327,16 @@ export function NavigationFlow({
           <NavigationWorkspaceStep
             imageUrl={state.imageDataUrl}
             bottom={{
-              type: 'input',
+              type: 'destination-search',
               promptText: state.promptText,
-              placeholder: state.agentMessage || '请告诉我你想去哪里',
+              placeholder: '搜索一下',
+              message: state.agentMessage || '请告诉我你想去哪里',
+              candidates: [],
               onPromptChange: (value) =>
                 dispatch({ type: 'intent-text-changed', value }),
-              onSubmit: () => void handleIntentSubmit(),
+              onSubmit: () => void handleDestinationSearch(),
+              onCandidateSelect: (candidate) => void handleCandidateSelect(candidate),
+              onBack: onRetake,
             }}
           />
         );
@@ -248,4 +364,4 @@ export function NavigationFlow({
   }
 
   return <div className="page-stack">{renderStep()}</div>;
-}
+});

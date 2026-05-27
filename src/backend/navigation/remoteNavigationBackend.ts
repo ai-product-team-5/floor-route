@@ -7,6 +7,8 @@ import type {
   NavigationBackend,
   ResolveNavigationIntentRequest,
   ResolveNavigationIntentResult,
+  SearchDestinationCandidatesRequest,
+  SearchDestinationCandidatesResult,
 } from './navigationBackendTypes';
 
 export const remoteNavigationBackend: NavigationBackend = {
@@ -16,6 +18,13 @@ export const remoteNavigationBackend: NavigationBackend = {
   analyzeFloorPlan(request) {
     return postBackendJson<AnalyzeFloorPlanRequest, AnalyzeFloorPlanResult>(
       '/api/navigation/analyze-floor-plan',
+      request,
+    );
+  },
+
+  searchDestinationCandidates(request) {
+    return postBackendJson<SearchDestinationCandidatesRequest, SearchDestinationCandidatesResult>(
+      '/api/navigation/search-destinations',
       request,
     );
   },

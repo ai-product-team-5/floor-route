@@ -12,6 +12,7 @@ export const initialNavigationFlowState: NavigationFlowState = {
   resultImageUrl: undefined,
   path: [],
   promptText: '',
+  destinationCandidates: [],
   destinationText: '',
   agentMessage: '',
   mode: 'ai-image',
@@ -56,6 +57,37 @@ export function navigationFlowReducer(
       return {
         ...state,
         promptText: action.value,
+      };
+    case 'destination-search-reset':
+      return {
+        ...state,
+        promptText: '',
+        destinationCandidates: [],
+        agentMessage: action.message ?? state.agentMessage,
+        stage: 'awaiting-intent',
+      };
+    case 'destination-search-started':
+      return state.imageDataUrl
+        ? {
+            ...state,
+            agentMessage: '',
+            destinationCandidates: [],
+            stage: 'searching-destinations',
+          }
+        : state;
+    case 'destination-search-finished':
+      return {
+        ...state,
+        agentMessage: action.message,
+        destinationCandidates: action.candidates,
+        stage: 'destination-candidates',
+      };
+    case 'destination-search-failed':
+      return {
+        ...state,
+        agentMessage: action.message,
+        destinationCandidates: [],
+        stage: 'destination-candidates',
       };
     case 'intent-analysis-started':
       return state.imageDataUrl
@@ -108,6 +140,7 @@ function routeHistoryItemToState(item: RouteHistoryItem): NavigationFlowState {
     resultImageUrl: item.resultImageUrl ?? item.originalImageUrl,
     path: item.path ?? [],
     promptText: '',
+    destinationCandidates: [],
     destinationText: item.endText,
     agentMessage: '',
     mode: item.mode,

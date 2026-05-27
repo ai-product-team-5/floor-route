@@ -10,10 +10,13 @@ export type {
   AnalyzeFloorPlanResult,
   CorrectFloorPlanPerspectiveRequest,
   CorrectFloorPlanPerspectiveResult,
+  DestinationCandidate,
   DetectFloorPlanCornersRequest,
   DetectFloorPlanCornersResult,
   FloorPlanCorner,
   NavigationBackend,
   ResolveNavigationIntentRequest,
   ResolveNavigationIntentResult,
+  SearchDestinationCandidatesRequest,
+  SearchDestinationCandidatesResult,
 } from './navigationBackendTypes';
