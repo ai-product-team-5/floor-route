@@ -1,10 +1,5 @@
 export type RouteMode = 'ai-image' | 'manual' | 'astar';
 
-export type NormalizedPoint = {
-  x: number;
-  y: number;
-};
-
 export type RouteHistoryItem = {
   id: string;
   createdAt: number;
@@ -12,6 +7,5 @@ export type RouteHistoryItem = {
   endText: string;
   originalImageUrl: string;
   resultImageUrl?: string;
-  path?: NormalizedPoint[];
   mode: RouteMode;
 };
