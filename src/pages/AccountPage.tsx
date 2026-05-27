@@ -1,9 +1,12 @@
 import { Check, ChevronRight, Clock3, HelpCircle, ImagePlus, KeyRound, Package, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   getFloorRouteApiKey,
   setFloorRouteApiKey,
 } from '../backend/auth/floorRouteApiKey';
+import { backendConfig } from '../backend/backendConfig';
+import { createBackendAuthHeaders } from '../backend/auth/authHeaders';
 import {
   captureErrorMessage,
   chooseFromGallery,
@@ -32,6 +35,7 @@ function getProfileAvatar() {
 }
 
 export function AccountPage() {
+  const navigate = useNavigate();
   const [deviceId] = useState(getDeviceId);
   const [profileName, setProfileName] = useState(getProfileName);
   const [avatarUrl, setAvatarUrl] = useState(getProfileAvatar);
@@ -43,6 +47,9 @@ export function AccountPage() {
   const [apiKeyInput, setApiKeyInput] = useState(getFloorRouteApiKey);
   const [hasApiKey, setHasApiKey] = useState(() => Boolean(getFloorRouteApiKey()));
   const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
+  const [updateToast, setUpdateToast] = useState('');
 
   function saveApiKey() {
     setFloorRouteApiKey(apiKeyInput);
@@ -50,9 +57,40 @@ export function AccountPage() {
     setIsApiKeySaved(true);
   }
 
-  const usedQuota = hasApiKey ? 65 : 0;
-  const totalQuota = 100;
-  const quotaPercent = Math.round((usedQuota / totalQuota) * 100);
+  useEffect(() => {
+    if (!hasApiKey || !backendConfig.apiBaseUrl) {
+      setCreditBalance(null);
+      return;
+    }
+
+    let isCurrent = true;
+
+    async function fetchCredits() {
+      try {
+        const response = await fetch(`${backendConfig.apiBaseUrl}/api/credits`, {
+          headers: createBackendAuthHeaders(),
+        });
+
+        if (!response.ok || !isCurrent) return;
+
+        const data = (await response.json()) as { balance?: number };
+        if (isCurrent && typeof data.balance === 'number') {
+          setCreditBalance(data.balance);
+        }
+      } catch {
+        // Silently fail — quota display is non-critical
+      }
+    }
+
+    void fetchCredits();
+
+    return () => { isCurrent = false; };
+  }, [hasApiKey, isApiKeySaved]);
+
+  function handleUpdate() {
+    setUpdateToast('已是最新版本 (v0.1.0)');
+    setTimeout(() => setUpdateToast(''), 2500);
+  }
 
   function openProfileEditor() {
     setDraftName(profileName);
@@ -187,11 +225,11 @@ export function AccountPage() {
         </label>
 
         <div className="account-quota-row">
-          <span>已使用算力</span>
-          <strong>{usedQuota}/{totalQuota}</strong>
+          <span>剩余算力</span>
+          <strong>{creditBalance !== null ? creditBalance : (hasApiKey ? '...' : 0)}</strong>
         </div>
         <div className="account-quota-track" aria-hidden="true">
-          <span style={{ width: `${quotaPercent}%` }} />
+          <span style={{ width: creditBalance !== null ? `${Math.min(100, creditBalance)}%` : '0%' }} />
         </div>
       </section>
 
@@ -203,23 +241,39 @@ export function AccountPage() {
             <span>购买 API</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
-          <button type="button">
+          <button type="button" onClick={() => setShowPurchaseHistory(true)}>
             <Clock3 aria-hidden="true" size={27} />
             <span>购买记录</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
-          <button type="button">
+          <button type="button" onClick={() => navigate('/help')}>
             <HelpCircle aria-hidden="true" size={27} />
             <span>帮助与反馈</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
-          <button type="button">
+          <button type="button" onClick={handleUpdate}>
             <Upload aria-hidden="true" size={27} />
             <span>更新</span>
             <ChevronRight aria-hidden="true" size={27} />
           </button>
         </div>
       </section>
+
+      {showPurchaseHistory && (
+        <div className="account-overlay" onClick={() => setShowPurchaseHistory(false)}>
+          <div className="account-overlay-content" onClick={(e) => e.stopPropagation()}>
+            <h3>购买记录</h3>
+            <p className="account-empty-state">暂无记录</p>
+            <button type="button" className="account-overlay-close" onClick={() => setShowPurchaseHistory(false)}>
+              关闭
+            </button>
+          </div>
+        </div>
+      )}
+
+      {updateToast && (
+        <div className="account-toast" role="status">{updateToast}</div>
+      )}
     </div>
   );
 }
