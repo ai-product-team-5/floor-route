@@ -1,16 +1,3 @@
-import type { PerspectivePoint } from '../floor-plan/perspectiveTransform';
-
-export type FloorPlanCorner = PerspectivePoint;
-
-export type DetectCornersRequest = {
-  imageDataUrl: string;
-};
-
-export type DetectCornersResult = {
-  corners: FloorPlanCorner[];
-  message?: string;
-};
-
 export type SearchDestinationsRequest = {
   imageDataUrl: string;
   query: string;
@@ -40,7 +27,6 @@ export type GeneratePathResult = {
 };
 
 export type NavigationBackend = {
-  detectCorners(request: DetectCornersRequest): Promise<DetectCornersResult>;
   searchDestinations(request: SearchDestinationsRequest): Promise<SearchDestinationsResult>;
   generatePath(request: GeneratePathRequest): Promise<GeneratePathResult>;
 };
