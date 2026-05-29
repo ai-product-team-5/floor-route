@@ -33,6 +33,7 @@ type NavigationWorkspaceBottom =
       message?: string;
       candidates: DestinationCandidate[];
       isSearching?: boolean;
+      hasSearched?: boolean;
       disabled?: boolean;
       onPromptChange: (value: string) => void;
       onSubmit: () => void;
@@ -232,10 +233,10 @@ function DestinationSearchScreen({
               <span className="destination-result-title">{candidate.title}</span>
             </button>
           ))
-        ) : bottom.promptText.trim() && bottom.message ? (
+        ) : bottom.hasSearched && bottom.promptText.trim() ? (
           <p className="destination-result-empty">没有找到匹配目的地，请换个关键词。</p>
         ) : (
-          <p className="destination-result-empty">输入目的地后搜索。</p>
+          <p className="destination-result-empty">输入目的地后开始搜索。</p>
         )}
       </section>
     </section>

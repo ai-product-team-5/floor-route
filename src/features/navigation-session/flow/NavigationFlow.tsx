@@ -201,6 +201,7 @@ export const NavigationFlow = forwardRef<NavigationFlowHandle, NavigationFlowPro
               placeholder: '搜索一下',
               message: state.agentMessage || '请选择最匹配的目的地。',
               candidates: state.destinationCandidates,
+              hasSearched: true,
               onPromptChange: (value) =>
                 dispatch({ type: 'intent-text-changed', value }),
               onSubmit: () => void handleDestinationSearch(),
