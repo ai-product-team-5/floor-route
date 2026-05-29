@@ -34,7 +34,7 @@ export function AgentRouteResultStep({
       </button>
       <button type="button" className="secondary-button full-width" onClick={onRevise}>
         <RefreshCw aria-hidden="true" size={18} />
-        重新描述
+        换个目的地
       </button>
       <button type="button" className="ghost-button full-width" onClick={onReset}>
         重新拍摄平面图
