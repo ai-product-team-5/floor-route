@@ -1,6 +1,6 @@
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { navigationBackend } from '../../../backend/navigation/navigationBackend';
+import { detectFloorPlanCornersInImage } from '../../../backend/floor-plan/floorPlanCornerDetection';
 import type { PerspectivePoint } from '../../../backend/floor-plan/perspectiveTransform';
 import { correctPerspective } from '../../../backend/floor-plan/perspectiveTransform';
 
@@ -46,21 +46,21 @@ export function PerspectiveCorrectionView({
 
     async function detectCorners() {
       try {
-        const result = await navigationBackend.detectCorners({
-          imageDataUrl,
-        });
+        const result = await detectFloorPlanCornersInImage(imageDataUrl);
 
         if (!isCurrent) return;
 
-        if (result.corners.length === 4) {
+        if (result && result.corners.length === 4) {
           setPoints(result.corners);
+          setDetectionState('detected');
+          setDetectionMessage('已自动框选边框，可调整后确认。');
+        } else {
+          setDetectionState('fallback');
+          setDetectionMessage('未自动识别到边框，请手动调整四角。');
         }
-
-        setDetectionState('detected');
-        setDetectionMessage(result.message ?? '已自动框选边框，可调整后确认。');
       } catch {
         if (isCurrent) {
-          setDetectionState('failed');
+          setDetectionState('fallback');
           setDetectionMessage('未自动识别到边框，请手动调整四角。');
         }
       }
