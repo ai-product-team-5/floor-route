@@ -4,7 +4,7 @@ export function createBackendAuthHeaders(): Record<string, string> {
   const apiKey = getFloorRouteApiKey();
 
   if (!apiKey) {
-    throw new Error('远程 API key 未配置。请在“我的”页面设置 FloorRoute API key。');
+    throw new Error('请先在「我的」页面设置 API Key');
   }
 
   return {
