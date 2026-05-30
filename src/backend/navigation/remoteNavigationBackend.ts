@@ -1,8 +1,10 @@
 import { backendConfig } from '../backendConfig';
 import { createBackendAuthHeaders } from '../auth/authHeaders';
 import type {
-  GeneratePathRequest,
-  GeneratePathResult,
+  GenerateWallMaskRequest,
+  GenerateWallMaskResult,
+  LocateEndpointsRequest,
+  LocateEndpointsResult,
   NavigationBackend,
   SearchDestinationsRequest,
   SearchDestinationsResult,
@@ -14,53 +16,86 @@ const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 480_000;
 
 export const navigationBackend: NavigationBackend = {
-  async searchDestinations(request) {
+  async searchDestinations(request, options) {
     return postBackendJson<SearchDestinationsRequest, SearchDestinationsResult>(
       '/api/search',
       { ...request, imageDataUrl: await compressImageDataUrl(request.imageDataUrl) },
+      options?.signal,
     );
   },
 
-  async generatePath(request) {
+  async generateWallMask(request, options) {
     const compressed = await compressImageDataUrl(request.imageDataUrl);
 
-    // Submit task
     const { taskId } = await postBackendJson<
-      GeneratePathRequest,
+      GenerateWallMaskRequest,
       { taskId: string; message: string }
-    >('/api/path', { ...request, imageDataUrl: compressed });
+    >('/api/walls', { imageDataUrl: compressed }, options?.signal);
 
-    // Poll until completed or failed
-    return pollTask(taskId);
+    return pollWallMaskTask(taskId, options?.signal);
+  },
+
+  async locateEndpoints(request, options) {
+    const compressed = await compressImageDataUrl(request.imageDataUrl);
+    return postBackendJson<LocateEndpointsRequest, LocateEndpointsResult>(
+      '/api/endpoints',
+      { ...request, imageDataUrl: compressed },
+      options?.signal,
+    );
   },
 };
 
-async function pollTask(taskId: string): Promise<GeneratePathResult> {
+async function pollWallMaskTask(
+  taskId: string,
+  signal?: AbortSignal,
+): Promise<GenerateWallMaskResult> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    await sleep(POLL_INTERVAL_MS);
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+
+    await sleep(POLL_INTERVAL_MS, signal);
 
     const result = await getBackendJson<{
       status: 'processing' | 'completed' | 'failed';
-      resultImageUrl?: string;
+      wallMaskDataUrl?: string;
       message?: string;
-    }>(`/api/task/${taskId}`);
+    }>(`/api/task/${taskId}`, signal);
 
-    if (result.status === 'completed' && result.resultImageUrl) {
-      return { resultImageUrl: result.resultImageUrl, message: result.message ?? '路线已生成' };
+    if (result.status === 'completed' && result.wallMaskDataUrl) {
+      return {
+        wallMaskDataUrl: result.wallMaskDataUrl,
+        message: result.message ?? '墙体掩码已生成',
+      };
     }
 
     if (result.status === 'failed') {
-      throw new Error(result.message ?? '路线生成失败');
+      throw new Error(result.message ?? '墙体生成失败');
     }
   }
 
-  throw new Error('路线生成超时，请重试');
+  throw new Error('墙体生成超时，请重试');
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort);
+  });
 }
 
 function compressImageDataUrl(dataUrl: string): Promise<string> {
@@ -91,6 +126,7 @@ function compressImageDataUrl(dataUrl: string): Promise<string> {
 async function postBackendJson<RequestBody, ResponseBody>(
   path: string,
   body: RequestBody,
+  signal?: AbortSignal,
 ): Promise<ResponseBody> {
   if (!backendConfig.apiBaseUrl) {
     throw new Error('API 未配置。请设置 VITE_FLOOR_ROUTE_API_BASE_URL。');
@@ -103,6 +139,7 @@ async function postBackendJson<RequestBody, ResponseBody>(
       ...createBackendAuthHeaders(),
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {
@@ -112,7 +149,10 @@ async function postBackendJson<RequestBody, ResponseBody>(
   return response.json() as Promise<ResponseBody>;
 }
 
-async function getBackendJson<ResponseBody>(path: string): Promise<ResponseBody> {
+async function getBackendJson<ResponseBody>(
+  path: string,
+  signal?: AbortSignal,
+): Promise<ResponseBody> {
   if (!backendConfig.apiBaseUrl) {
     throw new Error('API 未配置。请设置 VITE_FLOOR_ROUTE_API_BASE_URL。');
   }
@@ -120,6 +160,7 @@ async function getBackendJson<ResponseBody>(path: string): Promise<ResponseBody>
   const response = await fetch(`${backendConfig.apiBaseUrl}${path}`, {
     method: 'GET',
     headers: createBackendAuthHeaders(),
+    signal,
   });
 
   if (!response.ok) {

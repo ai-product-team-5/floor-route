@@ -2068,3 +2068,143 @@ h2 {
     overflow-y: auto;
   }
 }
+
+/* ===== Path overlay (A* result) ===== */
+.path-overlay-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.path-overlay-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.path-overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.path-overlay-anim {
+  animation: path-dash-flow 1.2s linear infinite;
+}
+
+@keyframes path-dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+/* ===== Wall mask preview step ===== */
+.wall-mask-preview-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.wall-mask-preview-subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.wall-mask-preview-frame {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #101010;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wall-mask-preview-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 1100ms ease;
+}
+
+.wall-mask-preview-original {
+  opacity: 1;
+}
+
+.wall-mask-preview-mask {
+  opacity: 0;
+}
+
+.wall-mask-preview-frame.is-revealed .wall-mask-preview-original {
+  opacity: 0.05;
+}
+
+.wall-mask-preview-frame.is-revealed .wall-mask-preview-mask {
+  opacity: 1;
+}
+
+.wall-mask-preview-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 12%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.18) 45%,
+    rgba(56, 189, 248, 0.55) 50%,
+    rgba(56, 189, 248, 0.18) 55%,
+    transparent 100%
+  );
+  filter: blur(2px);
+  animation: wall-mask-scan 1700ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wall-mask-scan {
+  0% {
+    transform: translateY(-12%);
+  }
+  100% {
+    transform: translateY(900%);
+  }
+}
+
+.wall-mask-preview-progress {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wall-mask-preview-progress span {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--primary, #38bdf8), #6ee7b7);
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: wall-mask-progress var(--auto-advance-ms, 2000ms) linear forwards;
+}
+
+@keyframes wall-mask-progress {
+  to {
+    transform: scaleX(1);
+  }
+}

@@ -6,15 +6,19 @@ type NavigationFlowInitialInput = {
   initialImageDataUrl?: string;
 };
 
-export const initialNavigationFlowState: NavigationFlowState = {
-  stage: 'awaiting-intent',
+const baseInitialState: NavigationFlowState = {
+  stage: 'generating-walls',
   imageDataUrl: undefined,
-  resultImageUrl: undefined,
+  wallMaskDataUrl: undefined,
   promptText: '',
   destinationCandidates: [],
   destinationText: '',
-  agentMessage: '请描述你想去的位置。',
-  mode: 'ai-image',
+  agentMessage: '正在分析平面图墙体结构…',
+  mode: 'astar',
+  startPoint: undefined,
+  endPoint: undefined,
+  pathPoints: undefined,
+  resultImageUrl: undefined,
 };
 
 export function createNavigationFlowState(
@@ -26,12 +30,14 @@ export function createNavigationFlowState(
 
   if (input?.initialImageDataUrl) {
     return {
-      ...initialNavigationFlowState,
+      ...baseInitialState,
       imageDataUrl: input.initialImageDataUrl,
+      stage: 'generating-walls',
+      agentMessage: '正在分析平面图墙体结构…',
     };
   }
 
-  return initialNavigationFlowState;
+  return baseInitialState;
 }
 
 export function navigationFlowReducer(
@@ -39,6 +45,31 @@ export function navigationFlowReducer(
   action: NavigationFlowAction,
 ): NavigationFlowState {
   switch (action.type) {
+    case 'walls-generation-started':
+      return {
+        ...state,
+        stage: 'generating-walls',
+        agentMessage: '正在分析平面图墙体结构…',
+      };
+    case 'walls-generation-finished':
+      return {
+        ...state,
+        stage: 'showing-walls',
+        wallMaskDataUrl: action.wallMaskDataUrl,
+        agentMessage: 'AI 已识别平面图墙体结构。',
+      };
+    case 'walls-generation-failed':
+      return {
+        ...state,
+        stage: 'generating-walls',
+        agentMessage: action.message,
+      };
+    case 'walls-acknowledged':
+      return {
+        ...state,
+        stage: 'awaiting-intent',
+        agentMessage: '请描述你想去的位置。',
+      };
     case 'intent-text-changed':
       return {
         ...state,
@@ -49,7 +80,12 @@ export function navigationFlowReducer(
         ...state,
         promptText: '',
         destinationCandidates: [],
-        agentMessage: action.message ?? state.agentMessage,
+        destinationText: '',
+        startPoint: undefined,
+        endPoint: undefined,
+        pathPoints: undefined,
+        resultImageUrl: undefined,
+        agentMessage: action.message ?? '请描述你想去的位置。',
         stage: 'awaiting-intent',
       };
     case 'destination-search-started':
@@ -75,30 +111,49 @@ export function navigationFlowReducer(
         destinationCandidates: [],
         stage: 'destination-candidates',
       };
-    case 'path-generation-started':
-      return state.imageDataUrl
-        ? {
-            ...state,
-            agentMessage: '',
-            stage: 'generating-path',
-          }
-        : state;
-    case 'path-generation-failed':
-      return {
-        ...state,
-        promptText: '',
-        agentMessage: action.message,
-        stage: 'awaiting-intent',
-      };
-    case 'path-generated':
+    case 'endpoints-location-started':
       return {
         ...state,
         destinationText: action.destinationText,
-        promptText: '',
-        resultImageUrl: action.resultImageUrl,
+        agentMessage: '正在定位起点和终点…',
+        stage: 'locating-endpoints',
+      };
+    case 'endpoints-location-finished':
+      // 直接进 planning-path；坐标由调用方使用，不必长期存 state
+      return {
+        ...state,
         agentMessage: action.message,
-        mode: 'ai-image',
+        stage: 'planning-path',
+      };
+    case 'endpoints-location-failed':
+      return {
+        ...state,
+        agentMessage: action.message,
+        stage: 'destination-candidates',
+      };
+    case 'path-planning-started':
+      return {
+        ...state,
+        agentMessage: '正在规划路径…',
+        stage: 'planning-path',
+      };
+    case 'path-planned':
+      return {
+        ...state,
+        destinationText: action.destinationText,
+        pathPoints: action.pathPoints,
+        startPoint: action.startPoint,
+        endPoint: action.endPoint,
+        promptText: '',
+        agentMessage: '路径已规划。',
+        mode: 'astar',
         stage: 'show-result',
+      };
+    case 'path-planning-failed':
+      return {
+        ...state,
+        agentMessage: action.message,
+        stage: 'destination-candidates',
       };
   }
 }
@@ -107,11 +162,15 @@ function routeHistoryItemToState(item: RouteHistoryItem): NavigationFlowState {
   return {
     stage: 'show-result',
     imageDataUrl: item.originalImageUrl,
-    resultImageUrl: item.resultImageUrl ?? item.originalImageUrl,
+    wallMaskDataUrl: item.wallMaskDataUrl,
     promptText: '',
     destinationCandidates: [],
     destinationText: item.endText,
     agentMessage: '',
     mode: item.mode,
+    startPoint: item.startPoint,
+    endPoint: item.endPoint,
+    pathPoints: item.pathPoints,
+    resultImageUrl: item.resultImageUrl,
   };
 }

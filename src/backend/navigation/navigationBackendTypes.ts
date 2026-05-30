@@ -16,17 +16,43 @@ export type SearchDestinationsResult = {
   message: string;
 };
 
-export type GeneratePathRequest = {
+export type GenerateWallMaskRequest = {
+  imageDataUrl: string;
+};
+
+export type GenerateWallMaskResult = {
+  wallMaskDataUrl: string;
+  message: string;
+};
+
+export type EndpointPoint = {
+  x: number;
+  y: number;
+  confidence: number;
+};
+
+export type LocateEndpointsRequest = {
   imageDataUrl: string;
   destination: string;
 };
 
-export type GeneratePathResult = {
-  resultImageUrl: string;
+export type LocateEndpointsResult = {
+  start: EndpointPoint;
+  end: EndpointPoint;
   message: string;
 };
 
 export type NavigationBackend = {
-  searchDestinations(request: SearchDestinationsRequest): Promise<SearchDestinationsResult>;
-  generatePath(request: GeneratePathRequest): Promise<GeneratePathResult>;
+  searchDestinations(
+    request: SearchDestinationsRequest,
+    options?: { signal?: AbortSignal },
+  ): Promise<SearchDestinationsResult>;
+  generateWallMask(
+    request: GenerateWallMaskRequest,
+    options?: { signal?: AbortSignal },
+  ): Promise<GenerateWallMaskResult>;
+  locateEndpoints(
+    request: LocateEndpointsRequest,
+    options?: { signal?: AbortSignal },
+  ): Promise<LocateEndpointsResult>;
 };

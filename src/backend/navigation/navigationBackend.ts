@@ -2,8 +2,11 @@ export { navigationBackend } from './remoteNavigationBackend';
 
 export type {
   DestinationCandidate,
-  GeneratePathRequest,
-  GeneratePathResult,
+  EndpointPoint,
+  GenerateWallMaskRequest,
+  GenerateWallMaskResult,
+  LocateEndpointsRequest,
+  LocateEndpointsResult,
   NavigationBackend,
   SearchDestinationsRequest,
   SearchDestinationsResult,

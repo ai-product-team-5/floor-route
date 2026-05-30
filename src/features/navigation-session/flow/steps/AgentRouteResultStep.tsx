@@ -1,4 +1,6 @@
 import { RefreshCw, Save } from 'lucide-react';
+import type { NormalizedPoint } from '../../../../core/types';
+import { PathOverlay } from '../../../path-planning/PathOverlay';
 
 type AgentRouteResultStepProps = {
   imageUrl: string;
@@ -7,6 +9,12 @@ type AgentRouteResultStepProps = {
   onSave: () => void;
   onRevise: () => void;
   onReset: () => void;
+  /** A* 模式下提供 */
+  pathPoints?: NormalizedPoint[];
+  startPoint?: NormalizedPoint;
+  endPoint?: NormalizedPoint;
+  /** ai-image 模式（仅历史回看才会有）：直接展示后端图 */
+  legacyResultImageUrl?: string;
 };
 
 export function AgentRouteResultStep({
@@ -16,7 +24,13 @@ export function AgentRouteResultStep({
   onSave,
   onRevise,
   onReset,
+  pathPoints,
+  startPoint,
+  endPoint,
+  legacyResultImageUrl,
 }: AgentRouteResultStepProps) {
+  const hasOverlay = pathPoints && pathPoints.length >= 2 && startPoint && endPoint;
+
   return (
     <section className="agent-stage">
       <div>
@@ -25,7 +39,17 @@ export function AgentRouteResultStep({
       </div>
 
       <div className="agent-map-frame result">
-        <img src={imageUrl} alt="带路径标注的平面图" />
+        {hasOverlay ? (
+          <PathOverlay
+            imageUrl={imageUrl}
+            pathPoints={pathPoints!}
+            start={startPoint!}
+            end={endPoint!}
+            animated
+          />
+        ) : (
+          <img src={legacyResultImageUrl ?? imageUrl} alt="带路径标注的平面图" />
+        )}
       </div>
 
       <button type="button" className="primary-button full-width" disabled={isSaved} onClick={onSave}>
